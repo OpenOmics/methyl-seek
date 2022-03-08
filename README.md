@@ -35,8 +35,6 @@ Where GA, GB & GC are the groups these 6 samples belong to.
 
 ###### Need combine multiple Snakefiles into one while still keeping four steps different
 
-Within MethylSnake.sh, alter the R variable to the absolute path of your working directory.
-
 The pipeline is divided into 4 steps:
 
  * bismark - which performs quality control steps and maps the data using Bismark, before extracting CpG profiles using MethylDackel.
@@ -44,18 +42,3 @@ The pipeline is divided into 4 steps:
  * dmr - which uses the previously generated CpG profiles to identify differentially methylated regions between groups.
  * dcv - which uses the previously generated CpG to deconvolute the data and identify which tissues samples belong to based on methylation profiles
 
-#### Dry run of the pipeline
-
-To perform a dry run a step of the pipeline, choose a step (e.g. bismark) and submit:
-
-```
-sh MethylSnake.sh bismark npr
-```
-
-#### Actual run of the pipeline
-
-Once everything seems to work, to perform a full run of a step of the pipeline, submit:
-
-```
-sbatch --partition=norm --gres=lscratch:500 --time=10-00:00:00 --mail-type=BEGIN,END,FAIL MethylSnake.sh bismark process
-```
