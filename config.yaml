@@ -1,0 +1,17 @@
+samples: "/data/NHLBIcore/projects/NHLBI-4/samples.txt"
+rawdata_dir: "/data/NHLBIcore/rawdata/NHLBI-4/fastq"
+result_dir: "/data/NHLBIcore/projects/NHLBI-4"
+hg38_fa: "/data/NHLBIcore/references/Bismark_Genomes/hg38/genome.fa"
+hg38_gtf: "/fdb/igenomes/Homo_sapiens/UCSC/hg38/Annotation/Genes/genes.gtf" ####new-edition
+hg38_rRNA_intervals: "/data/NHLBIcore/references/Bismark_Genomes/hg38/RNA-Seek_build/hg38.rRNA_interval_list" ####new-edition
+hg39_refFlat: "/data/NHLBIcore/references/Bismark_Genomes/hg38/RNA-Seek_build/refFlat.txt",  ####new-edition
+hg38_bed_ref: "/data/NHLBIcore/references/Bismark_Genomes/hg38/RNA-Seek_build/genes.ref.bed" ####new-edition
+mm10_fa: "/fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fa"
+rn6_fa: "/fdb/igenomes/Rattus_norvegicus/UCSC/rn6/Sequence/WholeGenomeFasta/genome.fa"
+bisulphite_ref: "/data/NHLBIcore/references/Bismark_Genomes"
+bisulphite_fa: "/fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa"
+phage_fa: "/data/NHLBIcore/references/Bismark_Genomes/phage/genome.fa"
+phage_ref: "/data/NHLBIcore/references/Bismark_Genomes/phage"
+species: "hg38"
+REF_ATLAS: "/data/NHLBIcore/references/MethylCpG_deconvolution/resources/reference_atlas.csv"
+CpG_MAP_TABLE: "/data/NHLBIcore/references/MethylCpG_deconvolution/resources/reference_atlas.hg38.unique.bed"

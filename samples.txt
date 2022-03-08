@@ -1,0 +1,9 @@
+sample  group	comp
+S1	GA	GAvsGB
+S2	GA	GAvsGB
+S3	GB	GAvsGB
+S4	GB	GAvsGB
+S5	GC	GAvsGC
+S6	GC	GAvsGC
+S1	GA	GAvsGC
+S2	GA	GAvsGC
