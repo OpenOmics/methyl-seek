@@ -32,12 +32,15 @@ S2  GA  GAvsGC
 
 Where GA, GB & GC are the groups these 6 samples belong to.
 
+
+###### Need combine multiple Snakefiles into one while still keeping four steps different
+
 Within MethylSnake.sh, alter the R variable to the absolute path of your working directory.
 
 The pipeline is divided into 4 steps:
 
  * bismark - which performs quality control steps and maps the data using Bismark, before extracting CpG profiles using MethylDackel.
- * bismark - which performs quality control steps and maps the data using BWA-Meth instead of Bismark, before extracting CpG profiles using MethylDackel.
+ * bwa - which performs quality control steps and maps the data using BWA-Meth instead of Bismark, before extracting CpG profiles using MethylDackel.
  * dmr - which uses the previously generated CpG profiles to identify differentially methylated regions between groups.
  * dcv - which uses the previously generated CpG to deconvolute the data and identify which tissues samples belong to based on methylation profiles
 
