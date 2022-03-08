@@ -11,7 +11,8 @@ module load snakemake/5.13.0
 
 cd $SLURM_SUBMIT_DIR
 
-R=/data/NHLBIcore/projects/NHLBI-4
+#R=/data/NHLBIcore/projects/NHLBI-4
+R=$3
 echo $R
 
 mkdir -p $R/snakejobs
