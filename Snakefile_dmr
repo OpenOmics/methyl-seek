@@ -1,0 +1,174 @@
+###########################################################################
+# Bisulphite sequencing (methylseq) analysis workflow
+#
+# This pipeline is adapted from current methyseq pipeline from BCB core
+# This pipeline focuses on the second set of steps,
+# Creator: Neelam Redekar, neelam.redekar@nih.gov
+# Created: December 21, 2021
+# Modifier: Tom Hill, tom.hill@nih.gov
+# Modified: February 16, 2022
+#
+###########################################################################
+
+from os.path import join
+from snakemake.io import expand, glob_wildcards
+from snakemake.utils import R
+from os import listdir
+import pandas as pd
+
+#configfile: "/data/NHLBIcore/projects/NHLBI-16/MethylSnakemake/config.yaml"
+#df = pd.read_csv("/data/NHLBIcore/projects/NHLBI-16/MethylSnakemake/samples.txt", header=0, sep='\t')
+
+##
+## Locations of working directories and reference genomes for analysis
+##
+sample_file= config["samples"]
+rawdata_dir= config["rawdata_dir"]
+working_dir= config["result_dir"]
+hg38_fa= config["hg38_fa"]
+phage_fa= config["phage_fa"]
+bisulphite_genome_path= config["bisulphite_ref"]
+phage_genome_path= config["phage_ref"]
+bisulphite_fa= config["bisulphite_fa"]
+species= config["species"]
+
+##
+## Read in the masterkey file for 3 tab-delimited columns of samples, groups and comparison
+## Each sample can be in the file multiple times if used in multiple comparisons, but will only be mapped/process once.
+##
+## e.g.
+##
+##sample	group	comp
+##S1	GA	GAvsGB
+##S2	GA	GAvsGB
+##S3	GB	GAvsGB
+##S4	GB	GAvsGB
+##S5	GC	GAvsGC
+##S6	GC	GAvsGC
+##S1	GA	GAvsGC
+##S2	GA	GAvsGC
+
+## The file requires these headings as they are used in multiple rules later on.
+
+## Here we read in the samples file generated and begin processing the data, printing out the samples and group comparisons
+
+df = pd.read_csv(sample_file, header=0, sep='\t')
+
+SAMPLES=list(set(df['sample'].tolist()))
+GROUPS=list(set(df['comp'].tolist()))
+
+print(SAMPLES)
+print(len(SAMPLES))
+print(GROUPS)
+print(len(GROUPS))
+
+CHRS = ['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20','chr21','chr22','chr23','chrX']
+
+RN = ['R1', 'R2']
+
+rule All:
+    input:
+      # input for bbseq
+      expand(join(working_dir, "phenofiles/{group}.txt"),group=GROUPS),
+      #homer files
+      expand(join(working_dir, "homer/{group}_{chr}.homerOutput.txt"),group=GROUPS,chr=CHRS),
+      expand(join(working_dir, "homer/{group}_{chr}.homerOutput2.txt"),group=GROUPS,chr=CHRS),
+      # lm methylation sites from bismark alignments
+      expand(join(working_dir, "bsseq/{group}_{chr}_betas_pval.bed"),chr=CHRS,group=GROUPS),
+      expand(join(working_dir, "combP/{group}_{chr}.regions-p.bed.gz"),chr=CHRS,group=GROUPS),
+      # summary figures of analysis
+      expand(join(working_dir,"figs/{group}_manhatten.png"),group=GROUPS),
+
+
+rule bsseq_inputs:
+  input:
+    G1=join(working_dir,"samples.txt"),
+  output:
+    C1=join(working_dir,"phenofiles/{group}.txt"),
+  params:
+    rname="bsseq_inputs",
+    groupComp='{group}',
+    dir=working_dir,
+    script_dir=join(working_dir,"scripts"),
+    p_dir=directory(join(working_dir, "phenofiles")),
+  shell:
+    """
+    mkdir -p {params.p_dir}
+    module load python
+    python {params.script_dir}/bsseqInput.py {input.G1} {params.groupComp} {params.dir} {output.C1}
+    """
+
+rule bsseq_bismark:
+  input:
+    B1=expand(join(working_dir, "CpG/{samples}.bedGraph"),samples=SAMPLES),
+    bizfile=join(working_dir,"phenofiles/{group}_bismark.txt"),
+  output:
+    bed=join(working_dir, "bsseq/{group}_{chr}_betas_pval.bed"),
+  params:
+    rname="bsseq_bismark",
+    chr='{chr}',
+    dir=directory(join(working_dir, "bsseq")),
+    cov="2",
+    sample_prop="0.25",
+    script_dir=join(working_dir,"scripts"),
+  threads:
+    4
+  shell:
+    """
+      module load R
+      mkdir -p {params.dir}
+      Rscript {params.script_dir}/bsseq_lm.R {params.chr} {input.bizfile} {output.bed} {params.sample_prop} {params.cov}
+    """
+
+rule combP:
+  input:
+    join(working_dir, "bsseq/{group}_{chr}_betas_pval.bed"),
+  output:
+    RP=join(working_dir, "combP/{group}_{chr}.regions-p.bed.gz"),
+    homerInput=temp(join(working_dir, "homer/{group}_{chr}.homerInput.txt")),
+    homerOutput=join(working_dir, "homer/{group}_{chr}.homerOutput.txt"),
+    homerOutput2=join(working_dir, "homer/{group}_{chr}.homerOutput2.txt"),
+    homerAnn=temp(join(working_dir,"homer/{group}_{chr}.homer.annStats.txt")),
+  params:
+    rname="CombP",
+    groups='{group}_{chr}',
+    dir=join(working_dir, "combP"),
+    annStat=join(working_dir,"scripts/blank.homer.annStats.txt"),
+    homer_dir=join(working_dir,"homer"),
+    dist="300",
+    step="60",
+  shell:
+    """
+      mkdir -p {params.dir}
+      module load combp bedtools
+      comb-p pipeline -c 4 --dist {params.dist} \
+      --step {params.step} --seed 0.01 \
+      -p {params.dir}/{params.groups}  \
+      --region-filter-p 0.05 \
+      --region-filter-n 3 \
+      {input} 
+      module load homer
+      mkdir -p {params.homer_dir}
+      cp {params.annStat} {output.homerAnn}
+      cat {output.RP} | sed "1,1d" | awk '{{print$1"\t"$2"\t"$3"\t"$1"_"$2"_"$3"\t"$4"|"$5"|"$6"|"$7"\t""*"}}' > {output.homerInput}
+      annotatePeaks.pl {output.homerInput} hg38 -annStats {output.homerAnn} > {output.homerOutput}
+      awk 'NR==FNR{{a[$4]=$5;next}}NR!=FNR{{c=$1; if(c in a){{print $0"\t"a[c]}}}}' {output.homerInput} {output.homerOutput} > {output.homerOutput2}
+    """
+
+rule manhatten:
+  input:
+    expand(join(working_dir, "bsseq/{group}_{chr}_betas_pval.bed"),chr=CHRS,group=GROUPS),
+  output:
+    LIST=join(working_dir,"figs/{group}.list"),
+    MAN=join(working_dir,"figs/{group}_manhatten.png"),
+  params:
+    dir=join(working_dir, "figs"),
+    rname="manhatten",
+    script_dir=join(working_dir,"scripts"),
+  shell:
+    """
+      mkdir -p {params.dir}
+      ls {params.dir}/{wildcards.group}_*_betas_pval.bed > {output.LIST}
+      module load R
+      Rscript {params.script_dir}/bsseq_Manhatten.R {output.LIST} {output.MAN}
+    """
