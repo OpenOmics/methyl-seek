@@ -6,6 +6,7 @@
 ```bash
 # Clone the Repository
 git clone https://github.com/OpenOmics/methyl-seek.git
+cd methyl-seek
 # Create a virtual environment
 python3 -m venv .venv
 # Activate the virtual environment
