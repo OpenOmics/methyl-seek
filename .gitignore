@@ -174,5 +174,6 @@ tmp_*/
 .Rhistory
 **/.Rhistory
 
-
+## DMR contrasts file
+contrasts.txt
 

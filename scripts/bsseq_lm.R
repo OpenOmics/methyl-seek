@@ -10,10 +10,12 @@ library(tidyr)
 library(parallel)
 library(BiocParallel)
 
-bis_files = read.delim(args[2])
+bis_files = read.delim(args[2])  ## comma-separated file list for all samples
 
 bsList = list()
 count = 1
+
+
 for (i in bis_files$path){
   filename=i
   samplename=bis_files$sample[count]

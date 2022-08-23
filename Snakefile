@@ -1,15 +1,8 @@
 #####################################################################################################
-# Bisulphite sequencing (methylseq) analysis workflow
+# Bisulphite sequencing (methyl-seek) analysis workflow
 #
-# This Snakefile is designed to perform QC of raw bisulphite sequencing data,
-# align reads to human (hg38) bisulfite genome using either Bismark (bowtie2) or
-# bwa_meth, summarizes alignment stats, extracts methylated loci from the genome.
-#
-# Created: December 21, 2021
-# Contact details: Tom Hill (tom.hill@nih.gov), Neelam Redekar (neelam.redekar@nih.gov),
-# Skyler Kuhn (skyler.kuhn@nih.gov), Asya Khleborodova (asya.khleborodova@nih.gov)
-#
-# Last Modified: March 8, 2022
+# Execution mode: run and dmr
+# Last Modified: August, 2022
 #
 #####################################################################################################
 
@@ -19,59 +12,72 @@ from snakemake.utils import R
 from os import listdir
 import pandas as pd
 
-##
-## Locations of working directories and reference genomes for analysis
-##
+# Global workflow variables
 sample_file= config["samples"]
+contrasts_file= config["contrasts"]
 rawdata_dir= config["rawdata_dir"]
 working_dir= config["result_dir"]
+
+# References
 hg38_fa= config["hg38_fa"]
 phage_fa= config["phage_fa"]
-hg38_gtf= config["hg39_gtf"] ################## New edition
-hg38_rRNA_intervals= config["rRNA_intervals"]  ################## New edition
-hg38_bed_ref= config["bed_ref"]  ################## New edition
-hg39_refFlat= config["hg39_refFlat"] ################## New edition
+hg38_gtf= config["hg38_gtf"]
+hg38_rRNA_intervals= config["hg38_rRNA_intervals"]
+hg38_bed_ref= config["hg38_bed_ref"]
+hg38_refFlat= config["hg38_refFlat"]
 bisulphite_genome_path= config["bisulphite_ref"]
 phage_genome_path= config["phage_ref"]
 bisulphite_fa= config["bisulphite_fa"]
 species= config["species"]
-
 REF_ATLAS=config["REF_ATLAS"]
 CpG_MAP_TABLE=config["CpG_MAP_TABLE"]
 
-##
-## Read in the masterkey file for 3 tab-delimited columns of samples, groups and comparison
-## Each sample can be in the file multiple times if used in multiple comparisons, but will only be mapped/process once.
-##
-## e.g.
-##
-##sample	group	comp
-##S1	GA	GAvsGB
-##S2	GA	GAvsGB
-##S3	GB	GAvsGB
-##S4	GB	GAvsGB
-##S5	GC	GAvsGC
-##S6	GC	GAvsGC
-##S1	GA	GAvsGC
-##S2	GA	GAvsGC
-
-## The file requires these headings as they are used in multiple rules later on.
-
-## Here we read in the samples file generated and begin processing the data, printing out the samples and group comparisons
-
+# sample list
 df = pd.read_csv(sample_file, header=0, sep='\t')
+SAMPLES=list(set(df['samples'].tolist()))
 
-SAMPLES=list(set(df['sample'].tolist()))
-GROUPS=list(set(df['comp'].tolist()))
-
-print(SAMPLES)
-print(len(SAMPLES))
-print(GROUPS)
-print(len(GROUPS))
 
 CHRS = ['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20','chr21','chr22','chr23','chrX']
 
 RN = ['R1', 'R2']
+
+def output_from_modes():
+    outputs = list()
+
+    if mode == "run":
+        outputs.append(join(working_dir, "multiqc_report.html"))
+    if mode == "dmr":
+        outputs.append(join(working_dir, "multiqc_report.html"))
+
+        #homer files
+        outputs.append(expand(join(dmr_dir, "homer/{group}_{chr}.homerOutput.txt"),group=GROUPS,chr=CHRS))
+        outputs.append(expand(join(dmr_dir, "homer/{group}_{chr}.homerOutput2.txt"),group=GROUPS,chr=CHRS))
+
+        # lm methylation sites from bismark alignments
+        outputs.append(expand(join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),chr=CHRS,group=GROUPS))
+        outputs.append(expand(join(dmr_dir, "combP/{group}_{chr}.regions-p.bed.gz"),chr=CHRS,group=GROUPS))
+
+        # summary figures of analysis
+        outputs.append(expand(join(dmr_dir,"figs/{group}_manhatten_beta.png"),group=GROUPS))
+
+        # combp summary of results
+        outputs.append(expand(join(dmr_dir, "combP/{group}.regions-p.bed"),group=GROUPS))
+        outputs.append(expand(join(dmr_dir, "figs/{group}_GREATfig1.png"),group=GROUPS))
+        outputs.append(expand(join(dmr_dir, "figs/{group}_manhatten.png"),group=GROUPS))
+        outputs.append(expand(join(dmr_dir, "combP/{group}.GREATprocesses.txt"),group=GROUPS))
+        outputs.append(expand(join(dmr_dir, "combP/{group}.GREATfunction.txt"),group=GROUPS))
+
+    if mode == "dcv":
+        outputs.append(join(working_dir, "multiqc_report.html"))
+        outputs.append(expand(join(working_dir, "CpG_CSV/{samples}.csv"),samples=SAMPLES))
+        outputs.append(expand(join(working_dir, "deconvolution_CSV/{samples}.csv"),samples=SAMPLES))
+        outputs.append(expand(join(working_dir, "deconvolution_CSV/{samples}_deconv.log"),samples=SAMPLES))
+        outputs.append(join(working_dir, "deconvolution_CSV/total.csv"))
+        outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_output.csv"))
+        outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_plot.png"))
+
+    return(outputs)
+
 
 rule All:
     input:
@@ -80,7 +86,6 @@ rule All:
 
       # Checking data quality:
       expand(join(working_dir, "rawQC/{samples}.{rn}_fastqc.html"), samples=SAMPLES, rn=RN),
-      expand(join(working_dir, "trimQC/{samples}.{rn}.pe_fastqc.html"), samples=SAMPLES, rn=RN),
 
       # Quality trimming output:
       expand(join(working_dir, "trimGalore/{samples}_val_1.fq.gz"),samples=SAMPLES),
@@ -92,14 +97,14 @@ rule All:
       expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.krona.html"),samples=SAMPLES),
 
       #FQscreen output
-      expand(join(working_dir,"FQscreen","{samples}.R1.trim_screen.txt"),samples=SAMPLES),
-      expand(join(working_dir,"FQscreen","{samples}.R1.trim_screen.png"),samples=SAMPLES),
-      expand(join(working_dir,"FQscreen","{samples}.R2.trim_screen.txt"),samples=SAMPLES),
-      expand(join(working_dir,"FQscreen","{samples}.R2.trim_screen.png"),samples=SAMPLES),
-      expand(join(working_dir,"FQscreen2","{samples}.R1.trim_screen.txt"),samples=SAMPLES),
-      expand(join(working_dir,"FQscreen2","{samples}.R1.trim_screen.png"),samples=SAMPLES),
-      expand(join(working_dir,"FQscreen2","{samples}.R2.trim_screen.txt"),samples=SAMPLES),
-      expand(join(working_dir,"FQscreen2","{samples}.R2.trim_screen.png"), samples=SAMPLES),
+      expand(join(working_dir, "FQscreen","{samples}_val_1_screen.txt"),samples=SAMPLES),
+      expand(join(working_dir, "FQscreen","{samples}_val_1_screen.png"),samples=SAMPLES),
+      expand(join(working_dir, "FQscreen","{samples}_val_2_screen.txt"),samples=SAMPLES),
+      expand(join(working_dir, "FQscreen","{samples}_val_2_screen.png"),samples=SAMPLES),
+      expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.txt"),samples=SAMPLES),
+      expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.png"),samples=SAMPLES),
+      expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.txt"),samples=SAMPLES),
+      expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.png"), samples=SAMPLES),
 
       # bisulphite genome preparation
       join(bisulphite_genome_path, species, "Bisulfite_Genome/CT_conversion/genome_mfa.CT_conversion.fa"),
@@ -107,38 +112,35 @@ rule All:
 
       # bismark align to human reference genomes
       expand(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.bam"),samples=SAMPLES),
-      expand(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.flagstat"),samples=SAMPLES),
       expand(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.cram"),samples=SAMPLES),
+      expand(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.flagstat"),samples=SAMPLES),
       expand(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.flagstat"),samples=SAMPLES),
 
       # get alignment statistics
-      expand(join(working_dir,"bismarkAlign/{samples}.RnaSeqMetrics.txt"),samples=SAMPLES),
-      expand(join(working_dir,"bismarkAlign/{samples}.flagstat.concord.txt"),samples=SAMPLES),
-      expand(join(working_dir,"rseqc/{samples}.inner_distance_freq.txt"),samples=SAMPLES),
-      expand(join(working_dir,"rseqc/{samples}.strand.info"),samples=SAMPLES),
-      expand(join(working_dir,"rseqc/{samples}.Rdist.info")samples=SAMPLES),
-      expand(join(working_dir,"QualiMap/{samples}/qualimapReport.html"),samples=SAMPLES),
-      expand(join(working_dir,"QualiMap/{samples}/genome_results.txt"),samples=SAMPLES),
-      expand(join(working_dir, "preseq/{sample}.ccurve"),samples=SAMPLES),
+      expand(join(working_dir, "bismarkAlign/{samples}.RnaSeqMetrics.txt"),samples=SAMPLES),
+      expand(join(working_dir, "bismarkAlign/{samples}.flagstat.concord.txt"),samples=SAMPLES),
+      expand(join(working_dir, "rseqc/{samples}.inner_distance_freq.txt"),samples=SAMPLES),
+      expand(join(working_dir, "rseqc/{samples}.strand.info"),samples=SAMPLES),
+      expand(join(working_dir, "rseqc/{samples}.Rdist.info"),samples=SAMPLES),
       expand(join(working_dir, "trimGalore/{samples}_insert_sizes.txt"),samples=SAMPLES),
-      expand(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.dedup_rg_added.dmark.bam"),samples=SAMPLES),
-      expand(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.dedup_rg_added.dmark.bai"),samples=SAMPLES),
-      expand(join(working_dir, "bismarkAlign/{samples}.star.duplic"), samples=SAMPLES),
+      expand(join(working_dir, "CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"),samples=SAMPLES),
 
-      # extract CpG profile with methyldackel
-      expand(join(working_dir, "CpG/{samples}.bedGraph"),samples=SAMPLES),
 
-      # generate multiqc output
-      "multiqc_report.html",
+      join(working_dir, "bismark_summary_report.txt"),
+      join(working_dir, "bismark_summary_report.html"),
+      output_from_modes()
 
+      #########  generate multiqc output
+      #join(working_dir, "multiqc_report.html"),
+
+      ######## Following lines are applicable only when "dcv" mode is enabled ###############
       # Deconvolution output
-      expand(join(working_dir, "CpG_CSV/{samples}.csv"),samples=SAMPLES),
-      expand(join(working_dir, "deconvolution_CSV/{samples}.csv"),samples=SAMPLES),
-      expand(join(working_dir, "deconvolution_CSV/{samples}_deconv.log"),samples=SAMPLES),
-      join(working_dir, "deconvolution_CSV/total.csv"),
-      join(working_dir, "deconvolution_CSV/total_deconv_output.csv"),
-      join(working_dir, "deconvolution_CSV/total_deconv_plot.png"),
-
+      #expand(join(working_dir, "CpG_CSV/{samples}.csv"),samples=SAMPLES),
+      #expand(join(working_dir, "deconvolution_CSV/{samples}.csv"),samples=SAMPLES),
+      #expand(join(working_dir, "deconvolution_CSV/{samples}_deconv.log"),samples=SAMPLES),
+      #join(working_dir, "deconvolution_CSV/total.csv"),
+      #join(working_dir, "deconvolution_CSV/total_deconv_output.csv"),
+      #join(working_dir, "deconvolution_CSV/total_deconv_plot.png"),
 
 ## Copy raw data to working directory
 rule raw_data_links:
@@ -174,35 +176,12 @@ rule raw_fastqc:
       fastqc -o {params.dir} -f fastq --threads {threads} --extract {input}
       """
 
-## Trim raw data
-rule trimmomatic:
+
+## trimming/filtering with trimGalore
+rule trimGalore:
     input:
       F1=join(working_dir, "raw/{samples}.R1.fastq.gz"),
       F2=join(working_dir, "raw/{samples}.R2.fastq.gz"),
-    output:
-      PE1=temp(join(working_dir, "trimmed_reads/{samples}.R1.pe.fastq.gz")),
-      UPE1=temp(join(working_dir, "trimmed_reads/{samples}.R1.ue.fastq.gz")),
-      PE2=temp(join(working_dir, "trimmed_reads/{samples}.R2.pe.fastq.gz")),
-      UPE2=temp(join(working_dir, "trimmed_reads/{samples}.R2.ue.fastq.gz"))
-    params:
-      rname="trimmomatic",
-      dir=directory(join(working_dir, "trimmed_reads")),
-      batch='--cpus-per-task=8 --partition=norm --gres=lscratch:180 --mem=25g --time=20:00:00',
-      command='ILLUMINACLIP:/usr/local/apps/trimmomatic/Trimmomatic-0.39/adapters/TruSeq3-PE-2.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50'
-    threads:
-      8
-    shell:
-      """
-      module load trimmomatic/0.39
-      mkdir -p {params.dir}
-      java -jar $TRIMMOJAR PE -phred33 -threads {threads} {input.F1} {input.F2} {output.PE1} {output.UPE1} {output.PE2} {output.UPE2} {params.command}
-      """
-
-## Second round of trimming/filtering
-rule trimGalore:
-    input:
-      F1=join(working_dir, "trimmed_reads/{samples}.R1.pe.fastq.gz"),
-      F2=join(working_dir, "trimmed_reads/{samples}.R2.pe.fastq.gz"),
     output:
       join(working_dir, "trimGalore/{samples}_val_1.fq.gz"),
       join(working_dir, "trimGalore/{samples}_val_2.fq.gz")
@@ -223,26 +202,6 @@ rule trimGalore:
       trim_galore --paired --cores {threads} {params.command} --basename {params.tag} --output_dir {params.dir} --fastqc_args "--outdir {params.fastqcdir}"  {input.F1} {input.F2}
       """
 
-## Run fastqc on filtered/trimmed data to visually assess quality for R1
-rule trim_fastqc:
-    input:
-      join(working_dir, "trimmed_reads/{samples}.{rn}.pe.fastq.gz"),
-    output:
-      join(working_dir, "trimQC/{samples}.{rn}.pe_fastqc.html"),
-    params:
-      rname="trim_fastqc",
-      dir=directory(join(working_dir, "trimQC")),
-      batch='--cpus-per-task=2 --mem=8g --time=8:00:00',
-    threads:
-      2
-    shell:
-      """
-      module load fastqc/0.11.9
-      mkdir -p {params.dir}
-      fastqc -o {params.dir} -f fastq --threads {threads} --extract {input}
-      """
-
-################## New edition - started
 rule bbmerge:
     input:
       R1=join(working_dir, "trimGalore/{samples}_val_1.fq.gz"),
@@ -251,16 +210,17 @@ rule bbmerge:
       join(working_dir, "trimGalore/{samples}_insert_sizes.txt"),
     params:
       rname='pl:bbmerge',
+      script_dir=join(working_dir,"scripts"),
     threads: 4
     shell: """
       # Get encoding of Phred Quality Scores
       module load python
-      encoding=$(python phred_encoding.py {input.R1})
+      encoding=$(python {params.script_dir}/phred_encoding.py {input.R1})
       echo "Detected Phred+${{encoding}} ASCII encoding"
 
       module load bbtools/38.87
       bbtools bbmerge-auto in1={input.R1} in2={input.R2} qin=${{encoding}} \
-      ihist={output} k=62 extend2=200 rem ecct -Xmx64G
+      ihist={output} k=62 extend2=200 rem ecct -Xmx900G
           """
 
 rule fastq_screen:
@@ -268,14 +228,14 @@ rule fastq_screen:
       file1=join(working_dir, "trimGalore/{samples}_val_1.fq.gz"),
       file2=join(working_dir, "trimGalore/{samples}_val_2.fq.gz"),
     output:
-      out1=join(working_dir,"FQscreen","{samples}.R1.trim_screen.txt"),
-      out2=join(working_dir,"FQscreen","{samples}.R1.trim_screen.png"),
-      out3=join(working_dir,"FQscreen","{samples}.R2.trim_screen.txt"),
-      out4=join(working_dir,"FQscreen","{samples}.R2.trim_screen.png"),
-      out5=join(working_dir,"FQscreen2","{samples}.R1.trim_screen.txt"),
-      out6=join(working_dir,"FQscreen2","{samples}.R1.trim_screen.png"),
-      out7=join(working_dir,"FQscreen2","{samples}.R2.trim_screen.txt"),
-      out8=join(working_dir,"FQscreen2","{samples}.R2.trim_screen.png")
+      out1=join(working_dir,"FQscreen","{samples}_val_1_screen.txt"),
+      out2=join(working_dir,"FQscreen","{samples}_val_1_screen.png"),
+      out3=join(working_dir,"FQscreen","{samples}_val_2_screen.txt"),
+      out4=join(working_dir,"FQscreen","{samples}_val_2_screen.png"),
+      out5=join(working_dir,"FQscreen2","{samples}_val_1_screen.txt"),
+      out6=join(working_dir,"FQscreen2","{samples}_val_1_screen.png"),
+      out7=join(working_dir,"FQscreen2","{samples}_val_2_screen.txt"),
+      out8=join(working_dir,"FQscreen2","{samples}_val_2_screen.png")
     params:
       rname='pl:fqscreen',
       outdir = join(working_dir,"FQscreen"),
@@ -306,28 +266,40 @@ rule kraken_pe:
         kronahtml = join(working_dir, "kraken","{samples}.trim.kraken_bacteria.krona.html"),
     params:
         rname='pl:kraken',
-        outdir=join(working_dir,"kraken"),
-        bacdb="/fdb/kraken/20170202_bacteria"
+        dir=join(working_dir,"kraken"),
+        #bacdb="/fdb/kraken/20170202_bacteria",
+        bacdb="/fdb/kraken/20210223_standard_kraken2",
+        prefix="{samples}",
     threads: 24
     shell:
       """
-      module load kraken/1.1
+      module load kraken
       module load kronatools/2.7
-      if [ ! -d {params.dir} ];then mkdir {params.dir};fi
-
+      mkdir -p {params.dir}
       cd /lscratch/$SLURM_JOBID;
       cp -rv {params.bacdb} /lscratch/$SLURM_JOBID/;
 
       kdb_base=$(basename {params.bacdb})
-      kraken --db /lscratch/$SLURM_JOBID/`echo {params.bacdb}|awk -F "/" '{{print \$NF}}'` --fastq-input --gzip-compressed --threads {threads} --output /lscratch/$SLURM_JOBID/{params.prefix}.krakenout --preload--paired {input.F1} {input.F2}
-      kraken-translate --mpa-format --db /lscratch/$SLURM_JOBID/`echo {params.bacdb}|awk -F "/" '{{print \$NF}}'` /lscratch/$SLURM_JOBID/{params.prefix}.krakenout |cut -f2|sort|uniq -c|sort -k1,1nr > /lscratch/$SLURM_JOBID/{params.prefix}.krakentaxa
-      cut -f 2,3 /lscratch/$SLURM_JOBID/{params.prefix}.krakenout | ktImportTaxonomy - -o /lscratch/$SLURM_JOBID/{params.prefix}.kronahtml
+      kraken2 --db /lscratch/$SLURM_JOBID/${{kdb_base}} \
+        --threads {threads} --report {output.krakentaxa} \
+        --output {output.krakenout} \
+        --gzip-compressed \
+        --paired {input.fq1} {input.fq2}
+      # Generate Krona Report
+      cut -f2,3 {output.krakenout} | ktImportTaxonomy - -o {output.kronahtml}
+
+      #kdb_base=$(basename {params.bacdb})
+      #kraken --db /lscratch/$SLURM_JOBID/`echo {params.bacdb}|awk -F "/" '{{print \$NF}}'` --fastq-input --gzip-compressed --threads {threads} --output /lscratch/$SLURM_JOBID/{params.prefix}.krakenout --preload--paired {input.fq1} {input.fq2}
+      #kraken-translate --mpa-format --db /lscratch/$SLURM_JOBID/`echo {params.bacdb}|awk -F "/" '{{print \$NF}}'` /lscratch/$SLURM_JOBID/{params.prefix}.krakenout |cut -f2|sort|uniq -c|sort -k1,1nr > /lscratch/$SLURM_JOBID/{params.prefix}.krakentaxa
+      #cut -f 2,3 /lscratch/$SLURM_JOBID/{params.prefix}.krakenout | ktImportTaxonomy - -o /lscratch/$SLURM_JOBID/{params.prefix}.kronahtml
       """
 
-################## New edition - ended
 
+######## NEED TO PUT CONDITION HERE:
+# If user provided different genome version, then run this "prep_bisulphite_genome" rule:
+#
+##########
 
-## prepare bi-sulphite genome
 rule prep_bisulphite_genome:
     input:
       bisulphite_fa
@@ -356,6 +328,10 @@ rule bismark_align:
     output:
       B1=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.bam"),
       B2=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.flagstat"),
+      FQ1=temp(join(working_dir, "bismarkAlign/{samples}_val_1.fq.gz_unmapped_reads_1.fq.gz")),
+      FQ2=temp(join(working_dir, "bismarkAlign/{samples}_val_2.fq.gz_unmapped_reads_2.fq.gz")),
+      FQ3=temp(join(working_dir, "bismarkAlign/{samples}_val_1.fq.gz_ambiguous_reads_1.fq.gz")),
+      FQ4=temp(join(working_dir, "bismarkAlign/{samples}_val_2.fq.gz_ambiguous_reads_2.fq.gz")),
     params:
       rname="bismark_align",
       dir=directory(join(working_dir, "bismarkAlign")),
@@ -363,6 +339,8 @@ rule bismark_align:
       command="--bowtie2 -N 1 --bam -L 22 --X 1000 --un --ambiguous -p 4 --score_min L,-0.6,-0.6",
       batch='--cpus-per-task=16 --partition=norm --gres=lscratch:100 --mem=100g --time=10:00:00',
       outbam=join(working_dir, "bismarkAlign/{samples}_val_1_bismark_bt2_pe.bam"),
+      R1=join(working_dir,"bismarkAlign/{samples}_val_1_bismark_bt2_PE_report.txt"),
+      R2=join(working_dir,"bismarkAlign/{samples}.bismark_bt2_PE_report.txt"),
     threads:
       16
     shell:
@@ -370,7 +348,8 @@ rule bismark_align:
       module load bismark/0.23.0 samtools
       mkdir -p {params.dir}
       bismark --multicore {threads} --temp_dir /lscratch/$SLURM_JOBID/ {params.command} --output_dir {params.dir} --genome {params.genome_dir} -1 {input.F1} -2 {input.F2}
-      mv {params.outbam} {output}
+      mv {params.outbam} {output.B1}
+      mv {params.R1} {params.R2}
       samtools flagstat -@ {threads} {output.B1} > {output.B2}
       """
 
@@ -381,9 +360,12 @@ rule bismark_dedup:
       T1=temp(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.deduplicated.bam")),
       B1=temp(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.bam")),
       B2=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.flagstat"),
+      C1=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.cram"),
     params:
       rname="bismark_dedup",
       dir=directory(join(working_dir, "bismarkAlign")),
+      prefix=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe"),
+      genome=bisulphite_fa,
     threads:
       16
     shell:
@@ -391,10 +373,28 @@ rule bismark_dedup:
       module load bismark/0.23.0
       module load samtools/1.15
       cd {params.dir}
-      deduplicate_bismark --paired --bam --outfile {output.B1} {input.F1}
-      samtools view -hb {output.T1} | samtools sort -@ {threads} -O BAM -o {output.B1}
+      samtools view -hb {input.F1} | samtools sort -n -@ {threads} -O BAM -o {output.T1}
+      deduplicate_bismark --paired --bam --outfile {params.prefix} {output.T1}
+      samtools view -T {params.genome} -@ 16 -h -C {output.B1} > {output.C1}
       samtools flagstat -@ {threads} {output.B1} > {output.B2}
       """
+
+rule bismark_extract:
+  input:
+    bam=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.bam"),
+  output:
+    cov=join(working_dir, "CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"),
+  params:
+    rname='pl:bismark_extract',
+    bismark_index=join(bisulphite_genome_path,species),
+    outdir=join(working_dir, "CpG/{samples}"),
+    genome=bisulphite_fa,
+  shell:
+    """
+    mkdir -p {params.outdir}
+    module load bismark samtools bowtie
+    bismark_methylation_extractor --paired-end --no_overlap --multicore 8 --gzip --report --bedGraph --counts --buffer_size 100G --no_header --cytosine_report --output {params.outdir} --scaffolds --genome_folder {params.bismark_index} {input.bam}
+    """
 
 rule prep_bisulphite_phage_genome:
     input:
@@ -438,71 +438,6 @@ rule bismark_phage:
     bismark --multicore {threads} --temp_dir /lscratch/$SLURM_JOBID/ {params.command} --output_dir {params.dir} --genome {params.genome_dir} -1 {input.F1} -2 {input.F2}
     """
 
-################## New edition - start
-rule picard:
-  input:
-    file1=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.bam"),
-  output:
-    bam=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.dedup_rg_added.dmark.bam"),
-    bai=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.dedup_rg_added.dmark.bai"),
-    metrics=join(working_dir, "bismarkAlign/{samples}.star.duplic")
-  params:
-    rname='pl:picard',
-    sampleName="{sample}",
-  threads: 6
-  shell:
-    """
-    module load samtools/1.15
-    module load picard/2.26.9
-
-    java -Xmx110g -XX:ParallelGCThreads=5 -jar ${{PICARDJARPATH}}/picard.jar AddOrReplaceReadGroups \
-    I={input.file1} O=/lscratch/$SLURM_JOBID/{params.sampleName}.bismark_bt2_pe.dedup_rg_added.bam \
-    TMP_DIR=/lscratch/$SLURM_JOBID RGID=id VALIDATION_STRINGENCY=SILENT RGLB=library RGPL=illumina RGPU=machine RGSM=sample;
-
-    java -Xmx110g -XX:ParallelGCThreads=5 -jar ${{PICARDJARPATH}}/picard.jar MarkDuplicates \
-    I=/lscratch/$SLURM_JOBID/{params.sampleName}.bismark_bt2_pe.dedup_rg_added.bam \
-    O=/lscratch/$SLURM_JOBID/{params.sampleName}.bismark_bt2_pe.dedup_rg_added.dmark.bam \
-    TMP_DIR=/lscratch/$SLURM_JOBID CREATE_INDEX=true VALIDATION_STRINGENCY=SILENT METRICS_FILE={output.metrics};
-
-    mv /lscratch/$SLURM_JOBID/{params.sampleName}.bismark_bt2_pe.dedup_rg_added.dmark.bam {output.bam};
-    mv /lscratch/$SLURM_JOBID/{params.sampleName}.bismark_bt2_pe.dedup_rg_added.dmark.bai {output.bai};
-    sed -i 's/MarkDuplicates/picard.sam.MarkDuplicates/g' {output.metrics};
-
-    """
-
-rule preseq:
-  input:
-    bam=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.dedup_rg_added.dmark.bam"),
-  output:
-    ccurve = join(working_dir, "preseq/{sample}.ccurve"),
-  params:
-    rname = "pl:preseq",
-    dir = directory(join(working_dir, "preseq")),
-  shell:
-    """
-    module load preseq/3.1.2
-    mkdir -p {params.dir}
-    preseq c_curve -B -o {output.ccurve} {input.bam}
-    """
-
-rule qualibam:
-  input:
-    bamfile=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.dedup_rg_added.dmark.bam"),
-  output:
-    report=join(working_dir,"QualiMap/{samples}/qualimapReport.html"),
-    results=join(working_dir,"QualiMap/{samples}/genome_results.txt"),
-  params:
-    rname='pl:qualibam',
-    outdir=join(working_dir,"QualiMap/{samples}"),
-    gtfFile=hg38_gtf,
-  threads: 16
-  shell:
-    """
-    module load qualimap/2.2.1
-    mkdir -p {params.outdir}
-    unset DISPLAY;
-    qualimap bamqc -bam {input.bamfile} --feature-file {params.gtfFile} -outdir {params.outdir} -nt {threads} --java-mem-size=120G
-    """
 
 rule rseqc:
   input:
@@ -511,11 +446,10 @@ rule rseqc:
     out1=join(working_dir,"rseqc/{samples}.strand.info"),
     out2=join(working_dir,"rseqc/{samples}.Rdist.info")
   params:
-    bedref=hg38_bed_ref
-    dir=join(working_dir,"rseqc")
+    bedref=hg38_bed_ref,
+    dir=join(working_dir,"rseqc"),
     rname="pl:rseqc",
   shell:
-
     """
     module load rseqc/4.0.0
     mkdir -p {params.dir}
@@ -548,7 +482,7 @@ rule stats:
     outstar2=join(working_dir,"bismarkAlign/{samples}.flagstat.concord.txt"),
   params:
     rname='pl:stats',
-    refflat=hg39_refFlat,
+    refflat=hg38_refFlat,
     rrnalist=hg38_rRNA_intervals,
     picardstrand="SECOND_READ_TRANSCRIPTION_STRAND",
     statscript=join("workflow", "scripts", "bam_count_concord_stats.py"),
@@ -561,64 +495,19 @@ rule stats:
     ## python3 {params.statscript} {input.file1} >> {output.outstar2} ## does require "Rstat" not available in biowulf
     """
 
-################## New edition - ended
-
-rule extract_CpG_bismark:
-    input:
-      F1=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.bam"),
-    output:
-      B1=join(working_dir, "CpG/{samples}.bedGraph"),
-    params:
-      rname="extract_CpG",
-      dir=directory(join(working_dir, "CpG")),
-      genome=hg38_fa,
-      prefix=join(working_dir,"CpG/{samples}"),
-    threads:
-      16
-    shell:
-      """
-      module load python
-      module load samtools
-      mkdir -p {params.dir}
-      source /data/$USER/conda/etc/profile.d/conda.sh
-      conda activate meth
-      module load samtools/1.9
-      MethylDackel mbias -@ {threads} {params.genome} {input.F1} {params.prefix}
-      MethylDackel extract -o {params.prefix} -@ {threads} {params.genome} {input.F1}
-      """
-
-rule cleanup_bams:
-  input:
-    B2=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.bam"),
-    G1=join(working_dir, "CpG/{samples}.bedGraph"),
-  output:
-    C2=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.cram"),
-  params:
-    rname="cleanup_bams",
-    genome=hg38_fa,
-    FQ1=join(working_dir, "bismarkAlign/{samples}_val_1.fq.gz_unmapped_reads_1.fq.gz"),
-    FQ2=join(working_dir, "bismarkAlign/{samples}_val_2.fq.gz_unmapped_reads_2.fq.gz"),
-    FQ3=join(working_dir, "bismarkAlign/{samples}_val_1.fq.gz_ambiguous_reads_1.fq.gz"),
-    FQ4=join(working_dir, "bismarkAlign/{samples}_val_2.fq.gz_ambiguous_reads_2.fq.gz"),
-  threads:
-    8
-  shell:
-    """
-      module load samtools
-      samtools -h -C -@ {threads} -T {params.genome} {input.B2} > {output.C2}
-      rm {params.FQ1}
-      rm {params.FQ2}
-      rm {params.FQ3}
-      rm {params.FQ4}
-    """
 
 rule multiqc:
   input:
     expand(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.bam"),samples=SAMPLES),
     expand(join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.bam"),samples=SAMPLES),
+    expand(join(working_dir, "trimGalore/{samples}_val_1.fq.gz"),samples=SAMPLES),
+    expand(join(working_dir, "trimGalore/{samples}_val_2.fq.gz"),samples=SAMPLES),
   output:
-    "multiqc_report.html",
+    join(working_dir, "bismark_summary_report.txt"),
+    join(working_dir, "bismark_summary_report.html"),
+    join(working_dir, "multiqc_report.html"),
   params:
+    rname="multiqc",
     dir=working_dir,
     bis_dir=directory(join(working_dir,"bismarkAlign")),
     script_dir=join(working_dir,"scripts"),
@@ -628,40 +517,44 @@ rule multiqc:
     cd {params.bis_dir}
     bismark2report
     bismark2summary
+    mv bismark_summary_report.html {params.dir}/
+    mv bismark_summary_report.txt {params.dir}/
     cd {params.dir}
     multiqc --ignore '*/.singularity/*' -f --interactive .
     """
 
 ############### Deconvolution rules begin here
+## run following rules in dcv mode only
+#################
+
 rule get_CpG:
-	input:
-		join(working_dir, "CpG/{samples}.bedGraph"),
-	output:
-		join(working_dir, "CpG_CSV/{samples}.csv"),
-	params:
-		rname="get_CpG",
-		cutoff=5,
-		script_dir=join(working_dir,"scripts"),
-		dir1=join(working_dir,"CpG_CSV"),
-		dir2=join(working_dir,"deconvolution_CSV"),
-	shell:
-		"""
-		mkdir -p {params.dir1}
-		mkdir -p {params.dir2}
-		module load R
-		Rscript {params.script_dir}/get_methy.R {input} {wildcards.samples} {params.cutoff} {output}
-		"""
+  input:
+    join(working_dir, "CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"),
+  output:
+    join(working_dir, "CpG_CSV/{samples}.csv"),
+  params:
+    rname="get_CpG",
+    cutoff=5,
+    script_dir=join(working_dir,"scripts"),
+    dir1=join(working_dir,"CpG_CSV"),
+    dir2=join(working_dir,"deconvolution_CSV"),
+  shell:
+    """
+    mkdir -p {params.dir1}
+    mkdir -p {params.dir2}
+    module load R
+    Rscript {params.script_dir}/get_methy.R {input} {wildcards.samples} {params.cutoff} {output}
+    """
 
 rule get_overlap_meth:
   input:
-    join(working_dir, "deconvolution_CSV/{samples}.meth.csv"),
+    join(working_dir, "CpG_CSV/{samples}.csv"),
   output:
     join(working_dir, "deconvolution_CSV/{samples}.csv"),
   params:
     rname="get_overlap_meth",
     map_table=CpG_MAP_TABLE,
-  shell:
-    """
+  run:
     df_ref=pd.read_csv(params.map_table,sep='\t',header=None)
     df_ref.columns=['chromosome','start','end','cgid']
     df_ref=df_ref.loc[(df_ref['chromosome'].isin(CHRS)),]
@@ -670,7 +563,6 @@ rule get_overlap_meth:
     dfm=dfm.drop(labels=['chromosome','start','end'],axis=1)
     dfm=dfm.set_index('cgid')
     dfm.to_csv(output[0])
-    """
 
 rule run_deconv:
   input:
@@ -683,25 +575,25 @@ rule run_deconv:
     rname="run_deconv",
     ref=REF_ATLAS,
   shell:
-"""
-  module load python
-  cd {params.dir}
-  python {params.script_dir}/deconvolve.py --atlas_path {params.ref} --plot --residuals {input}  > {output}  2>&1
-"""
+    """
+    module load python
+    cd {params.dir}
+    python {params.script_dir}/deconvolve.py --atlas_path {params.ref} --plot --residuals {input}  > {output}  2>&1
+    """
 
 rule merge_tables:
   input:
     expand(join(working_dir, "deconvolution_CSV/{samples}.csv"),samples=SAMPLES),
   output:
     join(working_dir, "deconvolution_CSV/total.csv"),
-  shell:
-    """
+  params:
+    rname="merge_tables",
+  run:
     dfm=pd.read_csv(input[0])
     for f in input[1:]:
-    df=pd.read_csv(f)
-    dfm=pd.merge(dfm,df,on='cgid',how='outer')
+    	df=pd.read_csv(f)
+    	dfm=pd.merge(dfm,df,on='cgid',how='outer')
     dfm.to_csv(output[0],index=False)
-    """
 
 rule run_deconv_merged:
   input:
@@ -710,6 +602,7 @@ rule run_deconv_merged:
     join(working_dir, "deconvolution_CSV/total_deconv_output.csv"),
     join(working_dir, "deconvolution_CSV/total_deconv_plot.png"),
   params:
+    rname="run_deconv_merged",
     ref=REF_ATLAS,
     dir=join(working_dir,"deconvolution_CSV"),
     script_dir=join(working_dir,"scripts"),
@@ -718,4 +611,112 @@ rule run_deconv_merged:
     module load python
     cd {params.dir}
     python {params.script_dir}/deconvolve.py --atlas_path {params.ref} --plot --residuals {input}
+    """
+
+############### Differential methylation rules begin here
+## run following rules in dmr mode only
+#################
+
+
+# contrasts list
+df2 = pd.read_csv(working_dir + "contrasts.txt", header=0, sep='\t')
+GROUPS=list(set(df2['comparisons'].tolist()))
+GRPSAMPLES=list(set(df2['samples'].tolist()))
+
+dmr_dir = join(working_dir, "dmr", GROUPS)
+mkdir -p dmr_dir
+
+
+rule bsseq_bismark:
+  input:
+    bizfile=join(working_dir,"contrasts.txt"),
+  output:
+    bed=join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),
+  params:
+    rname="bsseq_bismark",
+    chr='{chr}',
+    dir=directory(join(dmr_dir, "bsseq")),
+    cov="2",
+    sample_prop="0.25",
+    script_dir=join(dmr_dir,"scripts"),
+  threads:
+    4
+  shell:
+    """
+    module load R
+    mkdir -p {params.dir}
+    Rscript {params.script_dir}/bsseq_lm.R {params.chr} {input.bizfile} {output.bed} {params.sample_prop} {params.cov}
+
+    """
+
+rule combP:
+  input:
+    join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),
+  output:
+    RP=join(dmr_dir, "combP/{group}_{chr}.regions-p.bed.gz"),
+    homerInput=temp(join(dmr_dir, "homer/{group}_{chr}.homerInput.txt")),
+    homerOutput=join(dmr_dir, "homer/{group}_{chr}.homerOutput.txt"),
+    homerOutput2=join(dmr_dir, "homer/{group}_{chr}.homerOutput2.txt"),
+    homerAnn=temp(join(dmr_dir,"homer/{group}_{chr}.homer.annStats.txt")),
+  params:
+    rname="CombP",
+    groups='{group}_{chr}',
+    dir=join(dmr_dir, "combP"),
+    annStat=join(dmr_dir,"scripts/blank.homer.annStats.txt"),
+    homer_dir=join(dmr_dir,"homer"),
+    dist="300",
+    step="60",
+  shell:
+    """
+    mkdir -p {params.dir}
+    module load combp bedtools
+    comb-p pipeline -c 4 --dist {params.dist} --step {params.step} --seed 0.01 -p {params.dir}/{params.groups} --region-filter-p 0.05 --region-filter-n 3 {input}
+
+    module load homer
+    mkdir -p {params.homer_dir}
+    cp {params.annStat} {output.homerAnn}
+    cat {output.RP} | sed "1,1d" | awk '{{print$1"\t"$2"\t"$3"\t"$1"_"$2"_"$3"\t"$4"|"$5"|"$6"|"$7"\t""*"}}' > {output.homerInput}
+    annotatePeaks.pl {output.homerInput} hg38 -annStats {output.homerAnn} > {output.homerOutput}
+    awk 'NR==FNR{{a[$4]=$5;next}}NR!=FNR{{c=$1; if(c in a){{print $0"\t"a[c]}}}}' {output.homerInput} {output.homerOutput} > {output.homerOutput2}
+    """
+
+rule combP_figs:
+  input:
+    expand(join(dmr_dir, "combP/{group}_{chr}.regions-p.bed.gz"),group=GROUPS,chr=CHRS),
+  output:
+    p1=join(dmr_dir, "combP/{group}.regions-p.bed"),
+    f1=join(dmr_dir, "figs/{group}_GREATfig1.png"),
+    f3=join(dmr_dir, "figs/{group}_manhatten.png"),
+    o1=join(dmr_dir, "combP/{group}.GREATprocesses.txt"),
+    o2=join(dmr_dir, "combP/{group}.GREATfunction.txt"),
+  params:
+    rname="combP_figs",
+    dir=join(dmr_dir, "figs"),
+    prefix=join(dmr_dir, "combP/{group}_chr"),
+    script_dir=join(dmr_dir,"scripts"),
+  shell:
+    """
+    module load R
+    mkdir -p {params.dir}
+    zcat {params.prefix}*.regions-p.bed.gz | grep -v "^#" > {output.p1}
+    Rscript {params.script_dir}/combp_Manhatten.R {output.p1} {output.f3}
+    Rscript {params.script_dir}/combp_GREAT.R {output.p1} {output.f1} {output.o1} {output.o2}
+    """
+
+rule manhatten:
+  input:
+    expand(join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),chr=CHRS,group=GROUPS),
+  output:
+    LIST=temp(join(dmr_dir,"figs/{group}.list")),
+    MAN=join(dmr_dir,"figs/{group}_manhatten_beta.png"),
+  params:
+    dir=join(dmr_dir, "figs"),
+    rname="manhatten",
+    script_dir=join(dmr_dir,"scripts"),
+  shell:
+    """
+    mkdir -p {params.dir}
+    ls {params.dir}/{wildcards.group}_*_betas_pval.bed > {output.LIST}
+    module load R
+    Rscript {params.script_dir}/bsseq_Manhatten.R {output.LIST} {output.MAN}
     """
