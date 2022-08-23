@@ -102,27 +102,26 @@ sinteractive -N 1 -n 1 --time=1:00:00 --mem=8gb  --cpus-per-task=2 --pty bash
 module purge
 module load singularity snakemake
 
-cd ~/project/methyl-seek-main/
-
 ## run : generate CpG reports
-sbatch pipeline_launch.sh run npr ./
+sbatch pipeline_launch.sh run npr ~/project/methyl-seek-main/
 
 ## dcv : perform CpG deconvolution 
-sbatch pipeline_launch.sh dcv npr ./
+sbatch pipeline_launch.sh dcv npr ~/project/methyl-seek-main/
 
 ## dmr : perform CpG deconvolution
-sbatch pipeline_launch.sh dmr npr ./
+sbatch pipeline_launch.sh dmr npr ~/project/methyl-seek-main/
 
 # Step 2.) To launch pipeline
-cd ~/project/methyl-seek-main/
+module purge
+module load singularity snakemake
 
 ## run : generate CpG reports
-sbatch pipeline_submit.sh run process ./
+sbatch pipeline_submit.sh run process ~/project/methyl-seek-main/
 
 ## dcv : perform CpG deconvolution 
-sbatch pipeline_submit.sh dcv process ./
+sbatch pipeline_submit.sh dcv process ~/project/methyl-seek-main/
 
 ## dmr : perform CpG deconvolution 
-sbatch pipeline_submit.sh dmr process ./ group1 group2
+sbatch pipeline_submit.sh dmr process ~/project/methyl-seek-main/ group1 group2
 
 ```
