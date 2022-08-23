@@ -5,13 +5,11 @@ args <- commandArgs(trailingOnly = TRUE)
 wd <- as.character(args[1])
 group1=as.character(args[2])
 group2=as.character(args[3])
-sample.file=as.character(args[4])
 
 setwd(wd)
 
-meta = read.delim(sample.file)
+meta = read.table(paste(wd, "/samples.txt", sep=""), header=T)
 colnames(meta) = c("samples", "group")
-
 contrast = as.character(paste(group1, "-vs-", group2, sep=""))
 
 data = meta[which(meta$group %in% c(group1, group2)),]

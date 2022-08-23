@@ -40,8 +40,8 @@ mkdir -p $R/reports
 
 if [ $1 == "dmr" ]
 then
-  Rscript $R/scripts/create_contrasts_file.R $R $4 $5 $6
-  #### Rscript $R/scripts/create_contrasts_file.R $R group1 group2 sample.txt
+  Rscript $R/scripts/create_contrasts_file.R $R $4 $5
+  #### Rscript $R/scripts/create_contrasts_file.R $R group1 group2
 fi
 
 
