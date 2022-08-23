@@ -4,21 +4,21 @@
 
 ---
 ## Overview
-Welcome to methyl-seek's documentation! This guide is the main source of documentation for users that are getting started with the [methlyation pipeline](https://github.com/OpenOmics/methyl-seek/).
+Welcome to methyl-seek's documentation! This guide is the main source of documentation for users that are getting started with the [methlyation pipeline](https://openomics.github.io/methyl-seek/).
 
 The **`./methyl-seek`** pipeline is composed several inter-related pipelines to setup and run different types of analysis. Each of the available pipelines perform different functions:
 
- * [<code>methyl-seek <b>run</b></code>](usage/run.md): Identify CpG sites from whole genome or cell-free DNA bisulphite sequencing data.
- * [<code>methyl-seek <b>dmr</b></code>](usage/dmr.md): Determine differentially methylated regions populated with CpG sites.
- * [<code>methyl-seek <b>dcv</b></code>](usage/deconvolution.md): Identify cells/tissue of origin for cell-free DNA.
+ * [<code>methyl-seek <b>run</b></code>](https://openomics.github.io/methyl-seek/usage/run/): Identify CpG sites from whole genome or cell-free DNA bisulphite sequencing data.
+ * [<code>methyl-seek <b>dmr</b></code>](https://openomics.github.io/methyl-seek/usage/run/): Determine differentially methylated regions populated with CpG sites.
+ * [<code>methyl-seek <b>dcv</b></code>](https://openomics.github.io/methyl-seek/usage/run/): Identify cells/tissue of origin for cell-free DNA.
 
 **methyl-seek** is a comprehensive bisulphite-sequencing based methylation pipeline. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest-level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
 
 The pipeline is compatible with data generated from Illumina short-read sequencing technologies. As [inputs](usage/run.md) , it accepts a set of FastQ files and can be run locally on a compute instance or on-premise using a cluster. A user can define the method or mode of execution. The pipeline can submit jobs to a cluster using a job scheduler like SLURM.
 
-Before getting started, we highly recommend reading through the [usage](usage/run.md) section of each available sub command.
+Before getting started, we highly recommend reading through the [usage](https://openomics.github.io/methyl-seek/usage/run/) section of each available sub command.
 
-For more information about issues or trouble-shooting a problem, please checkout our [FAQ](faq/questions.md) prior to [opening an issue on Github](https://github.com/OpenOmics/methyl-seek/issues).
+For more information about issues or trouble-shooting a problem, please checkout our [FAQ](https://openomics.github.io/methyl-seek/faq/questions/) prior to [opening an issue on Github](https://github.com/OpenOmics/methyl-seek/issues).
 
 ## Contribute
 
