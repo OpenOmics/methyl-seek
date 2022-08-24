@@ -40,7 +40,7 @@ Download methyl-seek repository from github: `https://github.com/OpenOmics/RNA-s
 mkdir ~/project
 cd ~/project
 
-wget https://github.com/OpenOmics/RNA-seek/archive/refs/heads/main.zip
+wget https://github.com/OpenOmics/methyl-seek/archive/refs/heads/main.zip
 unzip main.zip
 cd methyl-seek-main
 ```

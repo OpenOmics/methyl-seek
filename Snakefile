@@ -624,7 +624,7 @@ GROUPS=list(set(df2['comparisons'].tolist()))
 GRPSAMPLES=list(set(df2['samples'].tolist()))
 
 dmr_dir = join(working_dir, "dmr", GROUPS)
-mkdir -p dmr_dir
+####mkdir -p dmr_dir
 
 
 rule bsseq_bismark:

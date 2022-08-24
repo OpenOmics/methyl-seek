@@ -4,7 +4,7 @@ result_dir: "/data/NHLBIcore/projects/NHLBI-4"
 hg38_fa: "/data/NHLBIcore/references/Bismark_Genomes/hg38/genome.fa"
 hg38_gtf: "/fdb/igenomes/Homo_sapiens/UCSC/hg38/Annotation/Genes/genes.gtf" ####new-edition
 hg38_rRNA_intervals: "/data/NHLBIcore/references/Bismark_Genomes/hg38/RNA-Seek_build/hg38.rRNA_interval_list" ####new-edition
-hg39_refFlat: "/data/NHLBIcore/references/Bismark_Genomes/hg38/RNA-Seek_build/refFlat.txt",  ####new-edition
+hg39_refFlat: "/data/NHLBIcore/references/Bismark_Genomes/hg38/RNA-Seek_build/refFlat.txt"  ####new-edition
 hg38_bed_ref: "/data/NHLBIcore/references/Bismark_Genomes/hg38/RNA-Seek_build/genes.ref.bed" ####new-edition
 mm10_fa: "/fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fa"
 rn6_fa: "/fdb/igenomes/Rattus_norvegicus/UCSC/rn6/Sequence/WholeGenomeFasta/genome.fa"
