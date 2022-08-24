@@ -103,25 +103,25 @@ module purge
 module load singularity snakemake
 
 ## run : generate CpG reports
-sbatch pipeline_launch.sh run npr ~/project/methyl-seek-main/
+sbatch ~/project/methyl-seek-main/pipeline_launch.sh run npr ~/project/methyl-seek-main/
 
 ## dcv : perform CpG deconvolution 
-sbatch pipeline_launch.sh dcv npr ~/project/methyl-seek-main/
+sbatch ~/project/methyl-seek-main/pipeline_launch.sh dcv npr ~/project/methyl-seek-main/
 
 ## dmr : perform CpG deconvolution
-sbatch pipeline_launch.sh dmr npr ~/project/methyl-seek-main/
+sbatch ~/project/methyl-seek-main/pipeline_launch.sh dmr npr ~/project/methyl-seek-main/
 
 # Step 2.) To launch pipeline
 module purge
 module load singularity snakemake
 
 ## run : generate CpG reports
-sbatch pipeline_submit.sh run process ~/project/methyl-seek-main/
+sbatch ~/project/methyl-seek-main/pipeline_submit.sh run process ~/project/methyl-seek-main/
 
 ## dcv : perform CpG deconvolution 
-sbatch pipeline_submit.sh dcv process ~/project/methyl-seek-main/
+sbatch ~/project/methyl-seek-main/pipeline_submit.sh dcv process ~/project/methyl-seek-main/
 
 ## dmr : perform CpG deconvolution 
-sbatch pipeline_submit.sh dmr process ~/project/methyl-seek-main/ group1 group2
+sbatch ~/project/methyl-seek-main/pipeline_submit.sh dmr process ~/project/methyl-seek-main/ group1 group2
 
 ```
