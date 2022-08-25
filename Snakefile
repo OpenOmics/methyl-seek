@@ -14,7 +14,6 @@ import pandas as pd
 
 # Global workflow variables
 sample_file= config["samples"]
-contrasts_file= config["contrasts"]
 rawdata_dir= config["rawdata_dir"]
 working_dir= config["result_dir"]
 
