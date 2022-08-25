@@ -30,6 +30,7 @@ bisulphite_fa= config["bisulphite_fa"]
 species= config["species"]
 REF_ATLAS=config["REF_ATLAS"]
 CpG_MAP_TABLE=config["CpG_MAP_TABLE"]
+mode=config["Mode"]
 
 # sample list
 df = pd.read_csv(sample_file, header=0, sep='\t')

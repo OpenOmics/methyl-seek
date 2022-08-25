@@ -44,6 +44,8 @@ then
   #### Rscript $R/scripts/create_contrasts_file.R $R group1 group2
 fi
 
+cp $R/preconfig.yaml $R/config.yaml
+echo "Mode: \"$1\"" >> $R/config.yaml
 
 # and be sure this directory and all subdirectories are writable
 #chmod -fR g+rwx .
