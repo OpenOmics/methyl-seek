@@ -37,6 +37,7 @@ echo $R
 mkdir -p $R/snakejobs
 mkdir -p $R/reports
 
+touch $R/contrast.txt
 
 if [ $1 == "dmr" ]
 then
