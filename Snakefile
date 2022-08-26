@@ -619,7 +619,7 @@ rule run_deconv_merged:
 
 
 # contrasts list
-df2 = pd.read_csv(working_dir + "contrasts.txt", header=0, sep='\t')
+df2 = pd.read_csv(working_dir + "/contrasts.txt", header=0, sep='\t')
 GROUPS=list(set(df2['comparisons'].tolist()))
 GRPSAMPLES=list(set(df2['samples'].tolist()))
 

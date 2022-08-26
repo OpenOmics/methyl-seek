@@ -68,7 +68,7 @@ For DMR analyses, user should provide `group1` and `group2` labels, that should 
 
 #### Config file
 
-Edit the `config.yaml` file as below:
+Edit the `preconfig.yaml` file as below:
 
 - Set `rawdata_dir` to the absolute path of the directory containing all your fastqs.
 - Set `result_dir` to the absolute path of the working directory containing `methyl-seek` pipeline, where all result files will be stored.
@@ -81,11 +81,11 @@ samples: "~/project/methyl-seek-main/samples.txt"
 rawdata_dir: "~/project/fastq/"
 result_dir: "~/project/methyl-seek-main/"
 ```
-See below instructions for adding reference to `config.yaml` file.
+See below instructions for adding reference to `preconfig.yaml` file.
 
 ## 4. Custom reference
 
-By default, bisulphite marked human hg38 reference genome is provide with this repo. To create a custom bisulphite marked reference for different genome of interest, simply provide genome fasta file (for e.g.`hg19.genome.fa`), and update the information in `config.yaml` as below:
+By default, bisulphite marked human hg38 reference genome is provide with this repo. To create a custom bisulphite marked reference for different genome of interest, simply provide genome fasta file (for e.g.`hg19.genome.fa`), and update the information in `preconfig.yaml` as below:
 
 ```
 bisulphite_ref: "~/project/bisulphite_genome"
