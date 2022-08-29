@@ -109,7 +109,7 @@ sbatch ~/project/methyl-seek-main/pipeline_launch.sh run npr ~/project/methyl-se
 sbatch ~/project/methyl-seek-main/pipeline_launch.sh dcv npr ~/project/methyl-seek-main/
 
 ## dmr : perform CpG deconvolution
-sbatch ~/project/methyl-seek-main/pipeline_launch.sh dmr npr ~/project/methyl-seek-main/
+sbatch ~/project/methyl-seek-main/pipeline_launch.sh dmr npr ~/project/methyl-seek-main/ group1 group2
 
 # Step 2.) To launch pipeline
 module purge

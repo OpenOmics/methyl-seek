@@ -15,7 +15,7 @@ cd $SLURM_SUBMIT_DIR
 ##
 ## Test commandline arguments
 ##
-if [ $1 != "run" ] && $1 != "dcv" ] && [ $1 != "dmr" ] ; then
+if [ $1 != "run" ] && [ $1 != "dcv" ] && [ $1 != "dmr" ] ; then
     echo " "
     echo "Invalid commandline option: $1"
     echo "Valid commandline options include: run or dcv or dmr"

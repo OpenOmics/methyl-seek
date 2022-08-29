@@ -42,6 +42,19 @@ CHRS = ['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10','
 
 RN = ['R1', 'R2']
 
+
+dmr_dir = working_dir
+
+if mode == "dmr":
+  # contrasts list
+  df2 = pd.read_csv(working_dir + "/contrasts.txt", header=0, sep='\t')
+  GROUPS=list(set(df2['comparisons'].tolist()))
+  GRPSAMPLES=list(set(df2['samples'].tolist()))
+  dmr_dir = join(working_dir, "dmr", GROUPS[0])
+  #mkdir -p dmr_dir
+
+
+
 def output_from_modes():
     outputs = list()
 
@@ -617,17 +630,6 @@ rule run_deconv_merged:
 ############### Differential methylation rules begin here
 ## run following rules in dmr mode only
 #################
-
-dmr_dir = working_dir
-
-if mode == "dmr":
-  # contrasts list
-  df2 = pd.read_csv(working_dir + "/contrasts.txt", header=0, sep='\t')
-  GROUPS=list(set(df2['comparisons'].tolist()))
-  GRPSAMPLES=list(set(df2['samples'].tolist()))
-  dmr_dir = join(working_dir, "dmr", GROUPS)
-  #mkdir -p dmr_dir
-
 
 rule bsseq_bismark:
   input:
