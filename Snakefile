@@ -35,6 +35,7 @@ mode=config["Mode"]
 # sample list
 df = pd.read_csv(sample_file, header=0, sep='\t')
 SAMPLES=list(set(df['samples'].tolist()))
+GROUPS=list(set(df['group'].tolist()))
 
 
 CHRS = ['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20','chr21','chr22','chr23','chrX']
@@ -617,14 +618,15 @@ rule run_deconv_merged:
 ## run following rules in dmr mode only
 #################
 
+dmr_dir = working_dir
 
-# contrasts list
-df2 = pd.read_csv(working_dir + "/contrasts.txt", header=0, sep='\t')
-GROUPS=list(set(df2['comparisons'].tolist()))
-GRPSAMPLES=list(set(df2['samples'].tolist()))
-
-dmr_dir = join(working_dir, "dmr", GROUPS)
-####mkdir -p dmr_dir
+if mode == "dmr":
+  # contrasts list
+  df2 = pd.read_csv(working_dir + "/contrasts.txt", header=0, sep='\t')
+  GROUPS=list(set(df2['comparisons'].tolist()))
+  GRPSAMPLES=list(set(df2['samples'].tolist()))
+  dmr_dir = join(working_dir, "dmr", GROUPS)
+  #mkdir -p dmr_dir
 
 
 rule bsseq_bismark:
