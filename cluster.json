@@ -66,14 +66,14 @@
           "mem": "24g"
       },
       "qualibam": {
-          "threads": "18",
-          "mem": "121g",
-          "time": "1-00:00:00"
+             "threads": "18",
+             "mem": "121g",
+             "time": "1-00:00:00"
       },
       "stats": {
-      	"gres": "lscratch:256",
-      	"mem": "110g",
-      	"threads": "4"
+             "gres": "lscratch:256",
+             "mem": "110g",
+             "threads": "4"
       },
       "extract_CpG_bismark": {
               "mem": "100g",
