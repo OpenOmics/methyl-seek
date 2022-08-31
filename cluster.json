@@ -26,7 +26,8 @@
               "threads": "16",
       },
       "bbmerge": {
-          "mem": "64g",
+          "mem": "900g",
+          "partition": "largemem",
           "threads": "4"
       },
       "fastq_screen": {
