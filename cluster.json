@@ -52,11 +52,17 @@
               "partition": "norm",
               "threads": "12",
       },
+      "bismark_extract": {
+              "mem": "900g",
+              "time": "4-00:00:00",
+              "partition": "largemem",
+              "threads": "12",
+      },
       "bismark_dedup": {
-              "mem": "20g",
+              "mem": "200g",
               "time": "24:00:00",
               "partition": "norm",
-              "threads": "16",
+              "threads": "12",
       },
       "picard": {
           "gres": "lscratch:256",
@@ -67,14 +73,14 @@
           "mem": "24g"
       },
       "qualibam": {
-             "threads": "18",
-             "mem": "121g",
-             "time": "1-00:00:00"
+          "threads": "18",
+          "mem": "121g",
+          "time": "1-00:00:00"
       },
       "stats": {
-             "gres": "lscratch:256",
-             "mem": "110g",
-             "threads": "4"
+        "gres": "lscratch:256",
+        "mem": "110g",
+        "threads": "4"
       },
       "extract_CpG_bismark": {
               "mem": "100g",
@@ -123,5 +129,8 @@
               "time": "24:00:00",
               "partition": "norm",
               "threads": "16",
+      },
+      "manhatten": {
+              "mem": "30g",
       },
 }
