@@ -642,7 +642,7 @@ rule bsseq_bismark:
     dir=directory(join(dmr_dir, "bsseq")),
     cov="2",
     sample_prop="0.25",
-    script_dir=join(dmr_dir,"scripts"),
+    script_dir=join(working_dir, "dmr","scripts"),
   threads:
     4
   shell:
