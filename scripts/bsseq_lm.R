@@ -103,13 +103,33 @@ chr1_lm_results2 = chr1_lm_results %>% group_by(CpGID_chr_bp) %>% transmute(beta
 
 print("model fit complete")
 
+
+##### Filtered file
 chr1_lm_results3 = as.data.frame(do.call(rbind, strsplit(chr1_lm_results2$CpGID_chr_bp,split = "_")))
 chr1_lm_results3$V2 = as.numeric(as.character(chr1_lm_results3$V2))
 chr1_lm_results3$V3 = chr1_lm_results3$V2 + 1
 chr1_lm_results3$V4 = chr1_lm_results2$pvalue
 chr1_lm_results3$V5 = chr1_lm_results2$beta
-colnames(chr1_lm_results3) = c("chr","start","end","p","beta")
+colnames(chr1_lm_results3) = c("chr","start","end","p","t")
 
 chr1_lm_results4 = chr1_lm_results3[chr1_lm_results3$p != "NaN",]
 
 write.table(chr1_lm_results4, file=args[3], sep = "\t", row.names=FALSE,quote=F)
+
+
+
+
+#### Oct 21, 2022
+##### Unfiltered file
+chr1_lm_results2b = chr1_lm_results %>% group_by(CpGID_chr_bp) %>% transmute(beta = map_dfr(model,tidy)$estimate[2], pvalue = 1) ##unfiltered output
+
+chr1_lm_results3b = as.data.frame(do.call(rbind, strsplit(chr1_lm_results2b$CpGID_chr_bp,split = "_")))
+chr1_lm_results3b$V2 = as.numeric(as.character(chr1_lm_results3b$V2))
+chr1_lm_results3b$V3 = chr1_lm_results3b$V2 + 1
+chr1_lm_results3b$V4 = chr1_lm_results2b$pvalue
+chr1_lm_results3b$V5 = chr1_lm_results2b$beta
+colnames(chr1_lm_results3b) = c("chr","start","end","p","t")
+
+chr1_lm_results4b = chr1_lm_results3b[chr1_lm_results3b$p != "NaN",]
+
+write.table(chr1_lm_results4b, file=args[6], sep = "\t", row.names=FALSE,quote=F)

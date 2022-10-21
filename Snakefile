@@ -69,6 +69,7 @@ def output_from_modes():
 
         # lm methylation sites from bismark alignments
         outputs.append(expand(join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),chr=CHRS,group=GROUPS))
+        outputs.append(expand(join(dmr_dir, "bsseq/{group}_{chr}_betas_wtFDR_unfiltered.bed"),chr=CHRS,group=GROUPS))
         outputs.append(expand(join(dmr_dir, "combP/{group}_{chr}.regions-p.bed.gz"),chr=CHRS,group=GROUPS))
 
         # summary figures of analysis
@@ -635,7 +636,8 @@ rule bsseq_bismark:
   input:
     bizfile=join(working_dir,"contrasts.txt"),
   output:
-    bed=join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),
+    bed1=join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),
+    bed2=join(dmr_dir, "bsseq/{group}_{chr}_betas_wtFDR_unfiltered.bed"),
   params:
     rname="bsseq_bismark",
     chr='{chr}',
@@ -649,8 +651,7 @@ rule bsseq_bismark:
     """
     module load R
     mkdir -p {params.dir}
-    Rscript {params.script_dir}/bsseq_lm.R {params.chr} {input.bizfile} {output.bed} {params.sample_prop} {params.cov}
-
+    Rscript {params.script_dir}/bsseq_lm.R {params.chr} {input.bizfile} {output.bed1} {params.sample_prop} {params.cov} {output.bed2}
     """
 
 rule combP:
