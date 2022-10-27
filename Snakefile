@@ -82,6 +82,12 @@ def output_from_modes():
         outputs.append(expand(join(dmr_dir, "combP/{group}.GREATprocesses.txt"),group=GROUPS))
         outputs.append(expand(join(dmr_dir, "combP/{group}.GREATfunction.txt"),group=GROUPS))
 
+        #MVP mvp_plots
+        outputs.append(expand(join(dmr_dir, "combP/{group}.miami.png"),group=GROUPS))
+        outputs.append(expand(join(dmr_dir, "combP/{group}.violin.png"),group=GROUPS))
+        outputs.append(expand(join(dmr_dir, "combP/{group}.pie-cpg.png"),group=GROUPS))
+        outputs.append(expand(join(dmr_dir, "combP/{group}.pie-genic.png"),group=GROUPS))
+
     if mode == "dcv":
         outputs.append(join(working_dir, "multiqc_report.html"))
         outputs.append(expand(join(working_dir, "CpG_CSV/{samples}.csv"),samples=SAMPLES))
@@ -683,6 +689,28 @@ rule combP:
     cat {output.RP} | sed "1,1d" | awk '{{print$1"\t"$2"\t"$3"\t"$1"_"$2"_"$3"\t"$4"|"$5"|"$6"|"$7"\t""*"}}' > {output.homerInput}
     annotatePeaks.pl {output.homerInput} hg38 -annStats {output.homerAnn} > {output.homerOutput}
     awk 'NR==FNR{{a[$4]=$5;next}}NR!=FNR{{c=$1; if(c in a){{print $0"\t"a[c]}}}}' {output.homerInput} {output.homerOutput} > {output.homerOutput2}
+    """
+
+rule mvp_plots:
+  input:
+    dir=join(dmr_dir, "bsseq"),
+    bed=join(dmr_dir, "bsseq/{group}_{chr}_betas_wtFDR_unfiltered.bed"),
+  output:
+    miami=join(dmr_dir, "combP/{group}.miami.png"),
+    violin=join(dmr_dir, "combP/{group}.violin.png"),
+    pie_cpg=join(dmr_dir, "combP/{group}.pie-cpg.png"),
+    pie_genic=join(dmr_dir, "combP/{group}.pie-genic.png"),
+  params:
+    rname="mvp_plots",
+    groups='{group}_{chr}',
+    dir=join(dmr_dir, "combP"),
+    fdr_cutoff="0.05",
+    highlight="20"
+  shell:
+    """
+    mkdir -p {params.dir}
+    module load R/4.1
+    Rscript {params.script_dir}/mvp_plots.R {input.dir} {params.fdr_cutoff} {params.highlight} {output.miami} {output.violin} {output.pie_cpg} {output.pie_genic}
     """
 
 rule combP_figs:
