@@ -11,22 +11,21 @@ The `methyl-seek` executable is composed of several inter-related pipelines inte
 
 #### Programs
 
-- FastQC is used to assess the sequencing quality. FastQC is ran twice, before and after adapter trimming. It generates a set of basic statistics to identify problems that can arise during sequencing or library preparation. FastQC will summarize per base and per read QC metrics such as quality scores and GC content. It will also summarize the distribution of sequence lengths and will report the presence of adapter sequences.
+- `FastQC` is used to assess the sequencing quality. `FastQC` is ran twice, before and after adapter trimming. It generates a set of basic statistics to identify problems that can arise during sequencing or library preparation. FastQC will summarize per base and per read QC metrics such as quality scores and GC content. It will also summarize the distribution of sequence lengths and will report the presence of adapter sequences.
 
-- TrimGalor
-{is used to remove adapter sequences, perform quality trimming, and remove very short sequences that would otherwise multi-map all over the genome prior to alignment.}
+- `TrimGalor` is used to clip 10 bp ends from both 5' and 3' ends of each sequences, and eliminate any reads shorter than 50 bp length, and runs `FASTQC` on trimmed reads. `BBmerge` is used to get insert sizes of paired read sequences.
 
-- Kraken2 and FastQ Screen are used to screen for various sources of contamination. During the process of sample collection to library preparation, there is a risk for introducing wanted sources of DNA. FastQ Screen compares your sequencing data to a set of different reference genomes to determine if there is contamination. It allows a user to see if the composition of your library matches what you expect. Also, if there are high levels of microbial contamination, Kraken can provide an estimation of the taxonomic composition. Kraken can be used in conjunction with Krona to produce interactive reports.
+- `Kraken2` and `FQScreen` are used to screen for various sources of contamination. During the process of sample collection to library preparation, there is a risk for introducing wanted sources of DNA. FastQ Screen compares your sequencing data to a set of different reference genomes to determine if there is contamination. It allows a user to see if the composition of your library matches what you expect. Also, if there are high levels of microbial contamination, Kraken can provide an estimation of the taxonomic composition. Kraken can be used in conjunction with Krona to produce interactive reports.
 
-- BBmerge **(need text here!)**
+- `Bismark` is used to map bisulfite treated sequencing reads to bisulphite marked reference genome of interest (default: human hg38 genome, hg38) and perform cytosine methylation calls in CpG, CHG and CHH context.
 
-- Bismark is used to map bisulfite treated sequencing reads to bisulphite marked reference genome of interest (default: human hg38 genome, hg38) and perform cytosine methylation calls in CpG, CHG and CHH context.
+- `MultiQC` is used to aggregate the results of all above mentioned tools into a single interactive report.
 
-- MultiQC is used to aggregate the results of all above mentioned tools into a single interactive report.
+- (dmr mode) `bsseq` (R package) is used to perform differential methylation calls using CpGs that exist in 25% of the population with coverage of at least 2. Differentially methylated CpGs are used to determine differentially methylated windows that are at least 300 bp long and contain 3 significant CpGs (with significance value of (p<0.05). Comb-P is used to merge adjacent differentially methylated windows (at most 6-bp apart) into differentially methylated regions (DMR).
 
-- bsseq (R package) is used for  **(need text here!)**
+- (dcv mode) `meth_atlas` (array-based deconvolution) algorithm is used to compare the CpG methylation profiles with known methylation profiles of 25 tissues types (determined using methylation array) to deconvole the source of DNA.
 
-- **(add other tools here .....)**
+- (dcv mode) `UMX` (WGBS-based deconvolution) algorithm is used to compare the CpG methylation profiles with known methylation profiles of 32 tissues types (determined using whole genome bisulfite sequencing data) to deconvole the source of DNA.
 
 #### Flowchart
 **(_Add workflow flowchart here !!!)**
@@ -64,7 +63,23 @@ Sample group information is provided in `samples.txt`, which is a tab-delimited,
 | S5      | group3 |
 | S6      | group3 |
 
-For DMR analyses, user should provide `group1` and `group2` labels, that should match with sample group information. file.
+For DMR analyses, user should provide `group1` and `group2` labels, that should match with sample group information. This information will be used to create the `contrasts.txt` file, which is a tab-delimited, four-column formatted with header labels as `sample`, `group`,`comparisons`, and `path`. First column includes `{sample}` names matching to those in FASTQ file names. Second column includes group labels corresponding to each sample (e.g.: `group1`, `group2` or `test`, `control`). Third column includes group labels that are to be compared for DMR analyses. Fourth column includes path to CpG output files generated from bismark (run mode) in `~/project/methyl-seek-main/CpG/{Sample}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz`
+
+Make sure should provide `group` and `comparison` labels match with labels in `samples.txt` file.
+Make sure `contrasts.txt` file is stored in main result directory(for e.g.: `~/project/methyl-seek-main/`)
+
+```
+cat contrasts.txt
+```
+
+| samples | group  |   comparison   |                                         path                                     |
+| ------- | ------ | -------------- | ---------------------------------------------------------------------------------|
+| S1      | group1 | group1vsgroup2 | ~/project/methyl-seek-main/CpG/S1.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
+| S2      | group1 | group1vsgroup2 | ~/project/methyl-seek-main/CpG/S2.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
+| S3      | group2 | group1vsgroup2 | ~/project/methyl-seek-main/CpG/S2.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
+| S4      | group2 | group1vsgroup2 | ~/project/methyl-seek-main/CpG/S4.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
+| S5      | group3 | group1vsgroup3 | ~/project/methyl-seek-main/CpG/S5.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
+| S6      | group3 | group1vsgroup3 | ~/project/methyl-seek-main/CpG/S6.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
 
 #### Config file
 
@@ -105,7 +120,7 @@ module load singularity snakemake
 ## run : generate CpG reports
 sbatch ~/project/methyl-seek-main/pipeline_launch.sh run npr ~/project/methyl-seek-main/
 
-## dcv : perform CpG deconvolution 
+## dcv : perform CpG deconvolution
 sbatch ~/project/methyl-seek-main/pipeline_launch.sh dcv npr ~/project/methyl-seek-main/
 
 ## dmr : perform CpG deconvolution
@@ -118,10 +133,10 @@ module load singularity snakemake
 ## run : generate CpG reports
 sbatch ~/project/methyl-seek-main/pipeline_submit.sh run process ~/project/methyl-seek-main/
 
-## dcv : perform CpG deconvolution 
+## dcv : perform CpG deconvolution
 sbatch ~/project/methyl-seek-main/pipeline_submit.sh dcv process ~/project/methyl-seek-main/
 
-## dmr : perform CpG deconvolution 
+## dmr : perform CpG deconvolution
 sbatch ~/project/methyl-seek-main/pipeline_submit.sh dmr process ~/project/methyl-seek-main/ group1 group2
 
 ```
