@@ -671,9 +671,9 @@ rule initGenome:
 
 rule bam2pat:
   input:
-    bam=temp(join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam")),
+    bam=join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam"),
   output:
-    bai=temp(join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam.bai")),
+    bai=join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam.bai"),
     pat=join(working_dir, "patAlign/{samples}.bismark_pe.deduplicated.pat.gz"),
     beta=join(working_dir, "patAlign/{samples}.bismark_pe.deduplicated.beta"),
   params:
