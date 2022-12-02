@@ -727,7 +727,7 @@ rule UXMdeconv:
     export PATH="/data/OpenOmics/references/methyl-seek/wgbs_tools:$PATH"
     module load samtools bedtools
     cd {params.dir}
-    {params.wgbsDir}/UXM_deconv/uxm deconv --atlas {params.atlas} -@ 16 -o {output} {input}
+    {params.wgbsDir}/UXM_deconv/uxm deconv --atlas {params.atlas} --tmp_dir /lscratch/$SLURM_JOB_ID --threads 16 -o {output} {input}
     """
 
 ############### Differential methylation rules begin here
