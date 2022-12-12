@@ -79,7 +79,7 @@ def output_from_modes():
 
         # lm methylation sites from bismark alignments
         outputs.append(expand(join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),chr=CHRS,group=GROUPS))
-        outputs.append(expand(join(dmr_dir, "bsseq/{group}_{chr}_betas_wtFDR_unfiltered.bed"),chr=CHRS,group=GROUPS))
+        #outputs.append(expand(join(dmr_dir, "bsseq/{group}_{chr}_betas_wtFDR_unfiltered.bed"),chr=CHRS,group=GROUPS))
         outputs.append(expand(join(dmr_dir, "combP/{group}_{chr}.regions-p.bed.gz"),chr=CHRS,group=GROUPS))
 
         # summary figures of analysis
@@ -95,8 +95,8 @@ def output_from_modes():
         #MVP mvp_plots
         outputs.append(expand(join(dmr_dir, "combP/{group}.miami.png"),group=GROUPS))
         outputs.append(expand(join(dmr_dir, "combP/{group}.violin.png"),group=GROUPS))
-        outputs.append(expand(join(dmr_dir, "combP/{group}.pie-cpg.png"),group=GROUPS))
-        outputs.append(expand(join(dmr_dir, "combP/{group}.pie-genic.png"),group=GROUPS))
+        #outputs.append(expand(join(dmr_dir, "combP/{group}.pie-cpg.png"),group=GROUPS))
+        #outputs.append(expand(join(dmr_dir, "combP/{group}.pie-genic.png"),group=GROUPS))
 
     if mode == "dcv":
         outputs.append(join(working_dir, "multiqc_report.html"))
@@ -739,7 +739,6 @@ rule bsseq_bismark:
     bizfile=join(working_dir,"contrasts.txt"),
   output:
     bed1=join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),
-    bed2=join(dmr_dir, "bsseq/{group}_{chr}_betas_wtFDR_unfiltered.bed"),
   params:
     rname="bsseq_bismark",
     chr='{chr}',
@@ -753,7 +752,7 @@ rule bsseq_bismark:
     """
     module load R
     mkdir -p {params.dir}
-    Rscript {params.script_dir}/bsseq_lm.R {params.chr} {input.bizfile} {output.bed1} {params.sample_prop} {params.cov} {output.bed2}
+    Rscript {params.script_dir}/bsseq_lm.R {params.chr} {input.bizfile} {output.bed1} {params.sample_prop} {params.cov}
     """
 
 rule combP:
@@ -790,12 +789,12 @@ rule combP:
 rule mvp_plots:
   input:
     dir=join(dmr_dir, "bsseq"),
-    bed=join(dmr_dir, "bsseq/{group}_{chr}_betas_wtFDR_unfiltered.bed"),
+    bed=join(dmr_dir, "bsseq/{group}_{chr}_betas_pval.bed"),
   output:
     miami=join(dmr_dir, "combP/{group}.miami.png"),
     violin=join(dmr_dir, "combP/{group}.violin.png"),
-    pie_cpg=join(dmr_dir, "combP/{group}.pie-cpg.png"),
-    pie_genic=join(dmr_dir, "combP/{group}.pie-genic.png"),
+    #pie_cpg=join(dmr_dir, "combP/{group}.pie-cpg.png"),
+    #pie_genic=join(dmr_dir, "combP/{group}.pie-genic.png"),
   params:
     rname="mvp_plots",
     groups='{group}_{chr}',
@@ -806,7 +805,8 @@ rule mvp_plots:
     """
     mkdir -p {params.dir}
     module load R/4.1
-    Rscript {params.script_dir}/mvp_plots.R {input.dir} {params.fdr_cutoff} {params.highlight} {output.miami} {output.violin} {output.pie_cpg} {output.pie_genic}
+    Rscript {params.script_dir}/mvp_plots.R {input.dir} {params.fdr_cutoff} {params.highlight} {output.miami} {output.violin}
+    ## {output.pie_cpg} {output.pie_genic}
     """
 
 rule combP_figs:

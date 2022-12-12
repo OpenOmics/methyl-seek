@@ -20,7 +20,7 @@ library(ggplot2)
 ##args[6] = figure name for pie_cpg
 ##args[7] = figure name for pie_genic
 
-comb_file <- list.files(path = args[1], pattern = "./*wtFDR_unfiltered.bed") %>% lapply(., read.table) %>% do.call(rbind, .)
+comb_file <- list.files(path = args[1], pattern = "./*_pval.bed") %>% lapply(., read.table) %>% do.call(rbind, .)
 comb_file <- comb_file[-1, ] %>% filter(!str_detect(V1, "chrom")) %>% setNames(c("chr", "start", "end",  "pval", "t")) %>% 
   mutate_at(c(2:5), as.numeric) %>% mutate(FDR = p.adjust(pval, method = "fdr"), rsid = paste0("CpG", seq(1:nrow(.))), 
                                            pos = (start+end)/2, t = 100*t, chr = str_remove(chr, "chr")) %>% 
@@ -53,19 +53,19 @@ v_plot<- ggplot(comb_file) + geom_point(aes(x = t, y = -log10(FDR)), size = 0.7,
 ###Pie charts for significant hits (FDR<args[2] and abs(meth.diff)>10%)
 ##CpG features
 ######setwd("~/Library/CloudStorage/OneDrive-NationalInstitutesofHealth/projects/methyl-seek")
-cpg.f <- lapply(c("island_annot.bed", "shores_annot.bed", "shelves_annot.bed"), read.table) %>% 
-  setNames(c("Island","Shores","Shelves")) %>% sapply(., nrow)
-pie_cpg<- pie(cpg.f, labels = names(cpg.f), main = "CpG features")
-
-##Genic regions
-genic.f <- lapply(c("5utr_annot.bed", "promoters_annot.bed", "exons_annot.bed","introns_annot.bed", "3utr_annot.bed"), read.table) %>% 
-  setNames(c("5UTR", "Promoters","Exons", "Introns", "3UTR")) %>% sapply(., nrow)
-pie_genic <- pie(genic.f, labels=names(genic.f), main = "Genic regions")
+# cpg.f <- lapply(c("island_annot.bed", "shores_annot.bed", "shelves_annot.bed"), read.table) %>% 
+#   setNames(c("Island","Shores","Shelves")) %>% sapply(., nrow)
+# pie_cpg<- pie(cpg.f, labels = names(cpg.f), main = "CpG features")
+# 
+# ##Genic regions
+# genic.f <- lapply(c("5utr_annot.bed", "promoters_annot.bed", "exons_annot.bed","introns_annot.bed", "3utr_annot.bed"), read.table) %>% 
+#   setNames(c("5UTR", "Promoters","Exons", "Introns", "3UTR")) %>% sapply(., nrow)
+# pie_genic <- pie(genic.f, labels=names(genic.f), main = "Genic regions")
 
 ###save plots
 ggsave(plot = miami_plot, filename = args[4], width = 40,height = 10, units = "cm",device = "png")
 ggsave(plot = v_plot, filename = args[5], width = 20,height = 20, units = "cm",device = "png")
 
 par(mfrow=c(1,2))
-png(plot = pie_cpg, filename = args[6], width = 20,height = 20, units = "cm",device = "png")
-png(plot = pie_genic, filename = args[7], width = 20,height = 20, units = "cm",device = "png")
+# png(plot = pie_cpg, filename = args[6], width = 20,height = 20, units = "cm",device = "png")
+# png(plot = pie_genic, filename = args[7], width = 20,height = 20, units = "cm",device = "png")
