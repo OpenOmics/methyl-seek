@@ -1,4 +1,3 @@
-#cluster.json
 {
       "__default__": {
               "mem": "8g",
