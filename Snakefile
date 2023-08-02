@@ -106,14 +106,7 @@ def output_from_modes():
         outputs.append(join(working_dir, "deconvolution_CSV/total.csv"))
         outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_output.csv"))
         outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_plot.png"))
-
-        outputs.append(expand(join(working_dir, "patAlign/{samples}.deconv.pat.gz"),samples=SAMPLES))
         outputs.append(expand(join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam.bai"),samples=SAMPLES))
-        outputs.append(expand(join(working_dir, "patAlign/{samples}.bismark_pe.deduplicated.pat.gz"),samples=SAMPLES))
-        outputs.append(expand(join(working_dir, "patAlign/{samples}.bismark_pe.deduplicated.beta"),samples=SAMPLES))
-        outputs.append(join(working_dir, "patAlign/UXM_deconvolution_total.csv"))
-        outputs.append(join("/data/OpenOmics/references/methyl-seek/wgbs_tools/references/",species,"genome.fa"))
-        outputs.append(join("/data/OpenOmics/references/methyl-seek/wgbs_tools/references/",species,"CpG.bed.gz"))
 
     return(outputs)
 
@@ -650,84 +643,6 @@ rule run_deconv_merged:
     module load python
     cd {params.dir}
     python {params.script_dir}/deconvolve.py --atlas_path {params.ref} --plot --residuals {input}
-    """
-
-rule initGenome:
-  input:
-    ref=hg38_fa,
-  output:
-    ref=join("/data/OpenOmics/references/methyl-seek/wgbs_tools/references/",species,"genome.fa"),
-    bed=join("/data/OpenOmics/references/methyl-seek/wgbs_tools/references/",species,"CpG.bed.gz"),
-  params:
-    genome=species,
-    rname="init",
-  shell:
-    """
-    export PATH="/data/OpenOmics/references/methyl-seek/wgbs_tools:$PATH"
-    module load samtools bedtools
-    wgbstools init_genome {params.genome} --fasta_path {input.ref}
-    wgbstools set_default_ref --name {params.genome}
-    """
-
-rule bam2pat:
-  input:
-    bam=join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam"),
-  output:
-    bai=join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam.bai"),
-    pat=join(working_dir, "patAlign/{samples}.bismark_pe.deduplicated.pat.gz"),
-    beta=join(working_dir, "patAlign/{samples}.bismark_pe.deduplicated.beta"),
-  params:
-    genome=species,
-    rname="bam2pat",
-    atlas_bed=atlas_bed,
-    dir1=join(working_dir,"bismarkAlign"),
-    dir2=join(working_dir,"patAlign"),
-  shell:
-    """
-    module load samtools bedtools
-    cd {params.dir1}
-    samtools index -@ 16 {input.bam}
-
-    cd {params.dir2}
-    export PATH="/data/OpenOmics/references/methyl-seek/wgbs_tools:$PATH"
-    wgbstools bam2pat -v --include_flags 3 -@ 16 --min_cpg 4 --genome {params.genome} -f {input.bam}
-    """
-
-rule patFilter:
-  input:
-    pat=join(working_dir, "patAlign/{samples}.bismark_pe.deduplicated.pat.gz"),
-  output:
-    pat=join(working_dir, "patAlign/{samples}.deconv.pat.gz"),
-  params:
-    genome=species,
-    rname="patFilter",
-    atlas_bed=atlas_bed,
-    dir=join(working_dir,"patAlign"),
-  shell:
-    """
-    export PATH="/data/OpenOmics/references/methyl-seek/wgbs_tools:$PATH"
-    module load samtools bedtools
-    cd {params.dir}
-    wgbstools view -L {params.atlas_bed} --min_len 4 --strip --strict {input.pat} | gzip -c - > {output.pat}
-    """
-
-rule UXMdeconv:
-  input:
-    expand(join(working_dir, "patAlign/{samples}.deconv.pat.gz"),samples=SAMPLES),
-  output:
-    join(working_dir, "patAlign/UXM_deconvolution_total.csv"),
-  params:
-    rname="UXMdeconv",
-    wgbsDir=wgbsDir,
-    atlas=atlas_tsv,
-  threads:
-    	16
-  shell:
-    """
-    export PATH="/data/OpenOmics/references/methyl-seek/wgbs_tools:$PATH"
-    module load samtools bedtools
-    cd {params.dir}
-    {params.wgbsDir}/UXM_deconv/uxm deconv --atlas {params.atlas} --tmp_dir /lscratch/$SLURM_JOB_ID --threads 16 -o {output} {input}
     """
 
 ############### Differential methylation rules begin here
