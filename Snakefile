@@ -224,14 +224,14 @@ rule trimGalore:
       fastqcdir=directory(join(working_dir, "postTrimQC")),
       command="--fastqc --clip_R1 10 --clip_R2 10 --three_prime_clip_R1 10 --three_prime_clip_R2 10 --length 50 --gzip",
       batch='--cpus-per-task=16 --partition=norm --gres=lscratch:100 --mem=25g --time=10:00:00',
+      workdir = working_dir,
     threads:
       16
     shell:
       """
-      module load trimgalore/0.6.7
-      module load fastqc/0.11.9
+      module load singularity
       mkdir -p {params.dir}
-      trim_galore --paired --cores {threads} {params.command} --basename {params.tag} --output_dir {params.dir} --fastqc_args "--outdir {params.fastqcdir}"  {input.F1} {input.F2}
+      singularity exec -B {params.workdir} /data/OpenOmics/SIFs/trimgalore_v0.1.0.sif trim_galore --paired --cores {threads} {params.command} --basename {params.tag} --output_dir {params.dir} --fastqc_args "--outdir {params.fastqcdir}"  {input.F1} {input.F2}
       """
 
 rule bbmerge:
