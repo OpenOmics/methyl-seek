@@ -619,7 +619,7 @@ rule run_deconv:
     """
     module load python
     cd {params.dir}
-    python {params.script_dir}/deconvolve.py --atlas_path {params.ref} --plot --residuals {input}  > {output}  2>&1
+    python {params.script_dir}/deconvolve2.py --atlas_path {params.ref} --residuals {input}  > {output}  2>&1
     """
 
 rule merge_tables:
@@ -651,7 +651,7 @@ rule run_deconv_merged:
     """
     module load python
     cd {params.dir}
-    python {params.script_dir}/deconvolve.py --atlas_path {params.ref} --plot --residuals {input}
+    python {params.script_dir}/deconvolve2.py --atlas_path {params.ref} --residuals {input}
     """
 
 ###############CFDNAME RULES######################
