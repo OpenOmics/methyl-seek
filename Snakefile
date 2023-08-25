@@ -33,6 +33,11 @@ CpG_MAP_TABLE= config["CpG_MAP_TABLE"]
 wgbsDir= config["wgbsDir"]
 mode= config["Mode"]
 
+REF_MARKERS=config["REF_MARKERS"]
+REF_IDS=config["REF_IDS"]
+GOLD_MARKERS=config["GOLD_MARKERS"]
+HG38TOHG19=config["HG38TOHG19"]
+
 
 if species == "hg38":
     atlas_bed= config["atlas_bed_hg38"]
@@ -107,6 +112,8 @@ def output_from_modes():
         outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_output.csv"))
         outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_plot.png"))
         outputs.append(expand(join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam.bai"),samples=SAMPLES))
+        outputs.append(expand(join(working_dir,"CpG/{samples}/{samples}.cfDNAmeInput.bedGraph"),samples=SAMPLES))
+        outputs.append(expand(join(working_dir,"CpG/{samples}/{samples}.cfDNAmeDeconvolution.tsv"),samples=SAMPLES))
 
     return(outputs)
 
@@ -156,6 +163,7 @@ rule All:
       expand(join(working_dir, "rseqc/{samples}.Rdist.info"),samples=SAMPLES),
       expand(join(working_dir, "trimGalore/{samples}_insert_sizes.txt"),samples=SAMPLES),
       expand(join(working_dir, "CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"),samples=SAMPLES),
+      expand(join(working_dir, "CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"),samples=SAMPLES),
 
 
       join(working_dir, "bismark_summary_report.txt"),
@@ -416,6 +424,7 @@ rule bismark_extract:
     bam=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.bam"),
   output:
     cov=join(working_dir, "CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"),
+    bed=join(working_dir,"CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"),
   params:
     rname='pl:bismark_extract',
     bismark_index=join(bisulphite_genome_path,species),
@@ -643,6 +652,89 @@ rule run_deconv_merged:
     module load python
     cd {params.dir}
     python {params.script_dir}/deconvolve.py --atlas_path {params.ref} --plot --residuals {input}
+    """
+
+###############CFDNAME RULES######################
+
+rule format1:
+  input:
+    bed=join(working_dir,"CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"),
+  output:
+    bed=temp(join(working_dir,"CpG/{samples}/{samples}.mapped_autosomal_CpG.bedGraph.tmp")),
+  params:
+    rname="pl:format1",
+  shell:
+    """
+    module load bedtools
+    zcat {input.bed} | tail -n +2 | bedtools sort -i - > {output.bed}
+    """
+
+rule format2:
+  input:
+    bed=join(working_dir,"CpG/{samples}/{samples}.mapped_autosomal_CpG.bedGraph.tmp"),
+  output:
+    graph=temp(join(working_dir,"CpG/{samples}/{samples}.liftover.bedGraph.tmp")),
+  params:
+    rname="pl:format2",
+    lift_file=HG38TOHG19,
+  shell:
+    """
+    module load bedtools crossmap
+    crossmap bed {params.lift_file} {input.bed} {output.graph}
+    """
+
+rule format3:
+  input:
+    graph=join(working_dir,"CpG/{samples}/{samples}.liftover.bedGraph.tmp"),
+  output:
+    sort=temp(join(working_dir,"CpG/{samples}/{samples}.sorted.bedGraph")),
+  params:
+    rname="pl:format3",
+    markers=GOLD_MARKERS,
+  shell:
+    """
+    module load bedtools
+    bedtools sort -i {input.graph} | bedtools intersect -wo -a {params.markers} -b stdin -sorted | awk '$6-$5==1 {print $0}' | awk 'NF{NF-=1};1' > {output.sort}
+    """
+
+rule format4:
+  input:
+    sort=join(working_dir,"CpG/{samples}/{samples}.sorted.bedGraph"),
+  output:
+    tsv=join(working_dir,"CpG/{samples}/{samples}.cfDNAmeInput.bedGraph"),
+  params:
+    rname="pl:format4",
+    script_dir=join(working_dir,"scripts"),
+  shell:
+    """
+    module load R
+    Rscript {params.script_dir}/aggregate_over_regions.R {input.sort} {output.tsv}
+    """
+
+rule cfDNAme:
+  input:
+    bed=join(working_dir,"CpG/{samples}/{samples}.cfDNAmeInput.bedGraph"),
+  output:
+    tsv=join(working_dir,"CpG/{samples}/{samples}.cfDNAmeDeconvolution.tsv"),
+  params:
+    rname="pl:cfDNAme",
+    script_dir=join(working_dir,"scripts"),
+    sampleName="{samples}",
+    reference_markers=REF_MARKERS,
+    reference_IDs=REF_IDS,
+  shell:
+    """
+    module load R
+    Rscript ${params.script_dir}/tissues_of_origin_v2.R \
+    {input.bed}  \
+    {params.reference_markers} \
+    {output.tsv} \
+    {params.reference_IDs} \
+    {params.sampleName} \
+    TRUE \
+    FALSE \
+    TRUE \
+    colon_5/hsc_5/hsc_2/spleen_1/spleen_2/spleen_3/spleen_4/
     """
 
 ############### Differential methylation rules begin here
