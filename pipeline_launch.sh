@@ -7,7 +7,7 @@ set -e
 #
 ###################
 module load python/3.7
-module load snakemake/5.13.0
+module load snakemake/7.32.4
 module load R
 
 cd $SLURM_SUBMIT_DIR
