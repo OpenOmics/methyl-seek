@@ -20,7 +20,7 @@ atlas_bed_hg38: "/data/OpenOmics/references/methyl-seek/UXM_deconv/supplemental/
 atlas_tsv_hg38: "/data/OpenOmics/references/methyl-seek/UXM_deconv/supplemental/Atlas.U25.l4.hg38.tsv"
 atlas_bed_hg19: "/data/OpenOmics/references/methyl-seek/UXM_deconv/supplemental/Atlas.U25.l4.hg19.bed"
 atlas_tsv_hg19: "/data/OpenOmics/references/methyl-seek/UXM_deconv/supplemental/Atlas.U25.l4.hg19.tsv"
-REF_MARKERS: "/data/NHLBI_IDSS/projects/NHLBI-4/cfDNAme_data/Atlas.MethylMatrix.markers_22cov.tsv"
+REF_MARKERS: "/data/NHLBI_IDSS/references/cfDNAme_data/Atlas.MethylMatrix.markers_22cov.tsv"
 REF_IDS: "/data/NHLBI_IDSS/references/cfDNAme_data/reference_methylomes.20230831.tsv"
 GOLD_MARKERS: "/data/NHLBI_IDSS/references/cfDNAme_data/golden_markers.22.bed"
 HG38TOHG19: "/data/NHLBI_IDSS/references/cfDNAme_data/hg38ToHg19.over.chain.gz"
