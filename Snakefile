@@ -694,7 +694,7 @@ rule format3:
   shell:
     """
     module load bedtools
-    bedtools sort -i {input.graph} | bedtools intersect -wo -a {params.markers} -b stdin -sorted | awk '$6-$5==1 {print $0}' | awk 'NF{NF-=1};1' > {output.sort}
+    bedtools sort -i {input.graph} | bedtools intersect -wo -a {params.markers} -b stdin -sorted | awk '$6-$5==1 {{print $0}}' | awk 'NF{{NF-=1}};1' > {output.sort}
     """
 
 rule format4:
