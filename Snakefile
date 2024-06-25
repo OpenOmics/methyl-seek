@@ -234,12 +234,12 @@ rule trimGalore:
       batch='--cpus-per-task=16 --partition=norm --gres=lscratch:100 --mem=25g --time=10:00:00',
       workdir = working_dir,
     threads:
-      16
+      8
     shell:
       """
-      module load singularity
+      module load trimgalore/0.6.7
       mkdir -p {params.dir}
-      singularity exec -B {params.workdir} /data/OpenOmics/SIFs/trimgalore_v0.1.0.sif trim_galore --paired --cores {threads} {params.command} --basename {params.tag} --output_dir {params.dir} --fastqc_args "--outdir {params.fastqcdir}"  {input.F1} {input.F2}
+      trim_galore --paired --cores {threads} {params.command} --basename {params.tag} --output_dir {params.dir} --fastqc_args "--outdir {params.fastqcdir}"  {input.F1} {input.F2}
       """
 
 rule bbmerge:
