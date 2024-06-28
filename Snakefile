@@ -131,19 +131,19 @@ rule All:
       expand(join(working_dir, "trimGalore/{samples}_val_2.fq.gz"),samples=SAMPLES),
 
       # kraken output
-      expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.out.txt"),samples=SAMPLES),
-      expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.taxa.txt"),samples=SAMPLES),
-      expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.krona.html"),samples=SAMPLES),
+      #expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.out.txt"),samples=SAMPLES),
+      #expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.taxa.txt"),samples=SAMPLES),
+      #expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.krona.html"),samples=SAMPLES),
 
       #FQscreen output
-      expand(join(working_dir, "FQscreen","{samples}_val_1_screen.txt"),samples=SAMPLES),
-      expand(join(working_dir, "FQscreen","{samples}_val_1_screen.png"),samples=SAMPLES),
-      expand(join(working_dir, "FQscreen","{samples}_val_2_screen.txt"),samples=SAMPLES),
-      expand(join(working_dir, "FQscreen","{samples}_val_2_screen.png"),samples=SAMPLES),
-      expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.txt"),samples=SAMPLES),
-      expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.png"),samples=SAMPLES),
-      expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.txt"),samples=SAMPLES),
-      expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.png"), samples=SAMPLES),
+      #expand(join(working_dir, "FQscreen","{samples}_val_1_screen.txt"),samples=SAMPLES),
+      #expand(join(working_dir, "FQscreen","{samples}_val_1_screen.png"),samples=SAMPLES),
+      #expand(join(working_dir, "FQscreen","{samples}_val_2_screen.txt"),samples=SAMPLES),
+      #expand(join(working_dir, "FQscreen","{samples}_val_2_screen.png"),samples=SAMPLES),
+      #expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.txt"),samples=SAMPLES),
+      #expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.png"),samples=SAMPLES),
+      #expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.txt"),samples=SAMPLES),
+      #expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.png"), samples=SAMPLES),
 
       # bisulphite genome preparation
       join(bisulphite_genome_path, species, "Bisulfite_Genome/CT_conversion/genome_mfa.CT_conversion.fa"),
@@ -158,10 +158,10 @@ rule All:
       # get alignment statistics
       expand(join(working_dir, "bismarkAlign/{samples}.RnaSeqMetrics.txt"),samples=SAMPLES),
       expand(join(working_dir, "bismarkAlign/{samples}.flagstat.concord.txt"),samples=SAMPLES),
-      expand(join(working_dir, "rseqc/{samples}.inner_distance_freq.txt"),samples=SAMPLES),
-      expand(join(working_dir, "rseqc/{samples}.strand.info"),samples=SAMPLES),
-      expand(join(working_dir, "rseqc/{samples}.Rdist.info"),samples=SAMPLES),
-      expand(join(working_dir, "trimGalore/{samples}_insert_sizes.txt"),samples=SAMPLES),
+      #expand(join(working_dir, "rseqc/{samples}.inner_distance_freq.txt"),samples=SAMPLES),
+      #expand(join(working_dir, "rseqc/{samples}.strand.info"),samples=SAMPLES),
+      #expand(join(working_dir, "rseqc/{samples}.Rdist.info"),samples=SAMPLES),
+      #expand(join(working_dir, "trimGalore/{samples}_insert_sizes.txt"),samples=SAMPLES),
       expand(join(working_dir, "CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"),samples=SAMPLES),
       expand(join(working_dir, "CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"),samples=SAMPLES),
 
