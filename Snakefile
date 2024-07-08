@@ -657,7 +657,7 @@ rule run_deconv_merged:
 
 ###############CFDNAME RULES######################
 
-rule format1:
+rule sorting_CpG_bedgraph:
   input:
     bed=join(working_dir,"CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"),
   output:
@@ -670,7 +670,7 @@ rule format1:
     zcat {input.bed} | tail -n +2 | bedtools sort -i - > {output.bed}
     """
 
-rule format2:
+rule liftover_bedgraph:
   input:
     bed=join(working_dir,"CpG/{samples}/{samples}.mapped_autosomal_CpG.bedGraph.tmp"),
   output:
@@ -684,7 +684,7 @@ rule format2:
     crossmap bed {params.lift_file} {input.bed} {output.graph}
     """
 
-rule format3:
+rule extract_signature_beds:
   input:
     graph=join(working_dir,"CpG/{samples}/{samples}.liftover.bedGraph.tmp"),
   output:
@@ -698,7 +698,7 @@ rule format3:
     bedtools sort -i {input.graph} | bedtools intersect -wo -a {params.markers} -b stdin -sorted | awk '$6-$5==1 {{print $0}}' | awk 'NF{{NF-=1}};1' > {output.sort}
     """
 
-rule format4:
+rule aggregate_over_regions:
   input:
     sort=join(working_dir,"CpG/{samples}/{samples}.sorted.bedGraph"),
   output:
