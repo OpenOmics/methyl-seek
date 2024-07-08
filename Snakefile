@@ -111,10 +111,11 @@ def output_from_modes():
         outputs.append(join(working_dir, "deconvolution_CSV/total.csv"))
         outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_output.csv"))
         outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_plot.png"))
-        outputs.append(expand(join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam"),samples=SAMPLES))
+        #outputs.append(expand(join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam"),samples=SAMPLES))
         outputs.append(expand(join(working_dir,"CpG/{samples}/{samples}.cfDNAmeInput.bedGraph"),samples=SAMPLES))
         outputs.append(expand(join(working_dir,"CpG/{samples}/{samples}.cfDNAmeDeconvolution.tsv"),samples=SAMPLES))
-
+        outputs.append(expand(join(working_dir,"UXM/{samples}.pat.gz"), samples=SAMPLES))
+        outputs.append(expand(join(working_dir,"UXM/{samples}_deconv.250.csv"), samples=SAMPLES))
     return(outputs)
 
 
@@ -855,4 +856,53 @@ rule manhatten:
     ls {params.dir}/{wildcards.group}_*_betas_pval.bed > {output.LIST}
     module load R
     Rscript {params.script_dir}/bsseq_Manhatten.R {output.LIST} {output.MAN}
+    """
+
+
+rule bamsort:
+  input:
+    bam=join(working_dir,"bismarkAlign/{samples}.bismark_bt2_pe.deduplicated.bam"),
+  output:
+    bam=temp(join(working_dir,"bismarkAlign/bams/{samples}.bam")),
+    bai=temp(join(working_dir,"bismarkAlign/bams/{samples}.bam.bai")),
+  params:
+    rname="pl:bamsort",
+    reference="/data/NHLBI_IDSS/references/Bismark_Genomes/hg38/genome.fa",
+  shell:
+    """
+    module load samtools
+    samtools sort -@ 12 --reference /data/NHLBI_IDSS/references/Bismark_Genomes/hg38/genome.fa {input.bam} > {output.bam}
+    samtools index -@ 12 {output.bam}
+    """
+
+rule wgbstools:
+  input:
+    bam=join(working_dir,"bismarkAlign/bams/{samples}.bam"),
+    bai=join(working_dir,"bismarkAlign/bams/{samples}.bam.bai"),
+  output:
+    pat=join(working_dir,"UXM/{samples}.pat.gz"),
+  params:
+    rname="pl:wgbstools",
+    ref=species,
+    outdir=join(working_dir,"UXM"),
+    script_dir=join(working_dir,"scripts"),
+  shell:
+    """
+    mkdir -p {params.outdir}
+    module load samtools bedtools bamtools
+    /data/NHLBI_IDSS/references/UXM/wgbstools bam2pat --genome hg38  -L /data/NHLBI_IDSS/references/UXM/supplemental/Atlas.U25.l4.hg38.full.bed --out_dir {params.outdir} -@ 12 {input.bam}
+    """
+
+rule UXM:
+  input:
+    pat=join(working_dir,"UXM/{samples}.pat.gz"),
+  output:
+    pat=join(working_dir,"UXM/{samples}_deconv.250.csv"),
+  params:
+    rname="pl:UXM",
+    atlas="/data/NHLBI_IDSS/references/UXM/supplemental/Atlas.U250.l4.hg38.full.tsv",
+  shell:
+    """
+    module load samtools bedtools bamtools
+    /data/NHLBI_IDSS/references/UXM/uxm deconv {input.pat} -o {output.pat} --atlas {params.atlas} --ignore Colon-Fibro Dermal-Fibro Gallbladder Bone-Osteob
     """

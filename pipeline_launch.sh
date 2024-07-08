@@ -68,6 +68,10 @@ CLUSTER_OPTS="sbatch --gres {cluster.gres} --cpus-per-task {cluster.threads} -p 
 if [ $2 == "npr" ]
 then
     snakemake --unlock --snakefile $R/Snakefile -j 1 --configfile $R/config.yaml
+    # Add the following snakemake options
+    # to the dry-run command to debug any
+    # dry-run related issues:
+    #   --debug-dag --verbose
     snakemake -npr --snakefile $R/Snakefile -j 1 --configfile $R/config.yaml
 fi
 
