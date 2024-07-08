@@ -111,7 +111,7 @@ def output_from_modes():
         outputs.append(join(working_dir, "deconvolution_CSV/total.csv"))
         outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_output.csv"))
         outputs.append(join(working_dir, "deconvolution_CSV/total_deconv_plot.png"))
-        outputs.append(expand(join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam"),samples=SAMPLES))
+        #outputs.append(expand(join(working_dir, "bismarkAlign/{samples}.bismark_pe.deduplicated.bam"),samples=SAMPLES))
         outputs.append(expand(join(working_dir,"CpG/{samples}/{samples}.cfDNAmeInput.bedGraph"),samples=SAMPLES))
         outputs.append(expand(join(working_dir,"CpG/{samples}/{samples}.cfDNAmeDeconvolution.tsv"),samples=SAMPLES))
 
