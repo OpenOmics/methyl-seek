@@ -1,6 +1,6 @@
 {
       "__default__": {
-              "mem": "8g",
+              "mem": "20g",
               "time": "10:00:00",
               "partition": "norm",
               "threads": "2",
