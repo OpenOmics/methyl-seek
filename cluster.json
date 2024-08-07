@@ -52,9 +52,9 @@
               "threads": "12",
       },
       "bismark_extract": {
-              "mem": "900g",
+              "mem": "200g",
               "time": "4-00:00:00",
-              "partition": "largemem",
+              "partition": "norm",
               "threads": "12",
       },
       "bismark_dedup": {
