@@ -234,7 +234,7 @@ rule raw_data_links:
       time      = allocated("time",      "raw_data_links", cluster),
       partition = allocated("partition", "raw_data_links", cluster),
     threads:
-      allocated("threads", "raw_data_links", cluster),
+      int(allocated("threads", "raw_data_links", cluster)),
     shell:
       """
       mkdir -p {params.dir}
@@ -258,7 +258,7 @@ rule raw_fastqc:
       time      = allocated("time",      "raw_fastqc", cluster),
       partition = allocated("partition", "raw_fastqc", cluster),
     threads:
-      allocated("threads", "raw_fastqc", cluster),
+      int(allocated("threads", "raw_fastqc", cluster)),
     shell:
       """
       module load fastqc/0.11.9
@@ -289,7 +289,7 @@ rule trimGalore:
       time      = allocated("time",      "trimGalore", cluster),
       partition = allocated("partition", "trimGalore", cluster),
     threads:
-      allocated("threads", "trimGalore", cluster),
+      int(allocated("threads", "trimGalore", cluster)),
     shell:
       """
       module load trimgalore/0.6.7
@@ -313,7 +313,7 @@ rule bbmerge:
       time      = allocated("time",      "bbmerge", cluster),
       partition = allocated("partition", "bbmerge", cluster),
     threads:
-      allocated("threads", "bbmerge", cluster),
+      int(allocated("threads", "bbmerge", cluster)),
     shell: 
       """
       # Get encoding of Phred Quality Scores
@@ -352,7 +352,7 @@ rule fastq_screen:
       time      = allocated("time",      "fastq_screen", cluster),
       partition = allocated("partition", "fastq_screen", cluster),
     threads:
-      allocated("threads", "fastq_screen", cluster),
+      int(allocated("threads", "fastq_screen", cluster)),
     shell:
       """
       module load fastq_screen/0.14.1
@@ -387,7 +387,7 @@ rule kraken_pe:
       time      = allocated("time",      "kraken_pe", cluster),
       partition = allocated("partition", "kraken_pe", cluster),
     threads:
-      allocated("threads", "kraken_pe", cluster),
+      int(allocated("threads", "kraken_pe", cluster)),
     shell:
       """
       module load kraken
@@ -432,7 +432,7 @@ rule prep_bisulphite_genome:
       time      = allocated("time",      "prep_bisulphite_genome", cluster),
       partition = allocated("partition", "prep_bisulphite_genome", cluster),
     threads:
-      allocated("threads", "prep_bisulphite_genome", cluster),
+      int(allocated("threads", "prep_bisulphite_genome", cluster)),
     shell:
       """
       module load bismark/0.23.0
@@ -469,7 +469,7 @@ rule bismark_align:
       time      = allocated("time",      "bismark_align", cluster),
       partition = allocated("partition", "bismark_align", cluster),
     threads:
-      allocated("threads", "bismark_align", cluster),
+      int(allocated("threads", "bismark_align", cluster)),
     shell:
       """
       module load bismark/0.23.0 samtools
@@ -500,7 +500,7 @@ rule bismark_dedup:
       time      = allocated("time",      "bismark_dedup", cluster),
       partition = allocated("partition", "bismark_dedup", cluster),
     threads:
-      allocated("threads", "bismark_dedup", cluster),
+      int(allocated("threads", "bismark_dedup", cluster)),
     shell:
       """
       module load bismark/0.23.0
@@ -530,7 +530,7 @@ rule bismark_extract:
     time      = allocated("time",      "bismark_extract", cluster),
     partition = lambda wc, attempt: allocated("partition", "bismark_extract", cluster) if attempt == 1 else "largemem",
   threads:
-    allocated("threads", "bismark_extract", cluster),
+    int(allocated("threads", "bismark_extract", cluster)),
   shell:
     """
     mkdir -p {params.outdir}
@@ -555,7 +555,7 @@ rule prep_bisulphite_phage_genome:
       time      = allocated("time",      "prep_bisulphite_phage_genome", cluster),
       partition = allocated("partition", "prep_bisulphite_phage_genome", cluster),
     threads:
-      allocated("threads", "prep_bisulphite_phage_genome", cluster),
+      int(allocated("threads", "prep_bisulphite_phage_genome", cluster)),
     shell:
       """
       module load bismark/0.23.0
@@ -584,7 +584,7 @@ rule bismark_phage:
     time      = allocated("time",      "bismark_phage", cluster),
     partition = allocated("partition", "bismark_phage", cluster),
   threads:
-    allocated("threads", "bismark_phage", cluster),
+    int(allocated("threads", "bismark_phage", cluster)),
   shell:
     """
     module load bismark/0.23.0
@@ -609,7 +609,7 @@ rule rseqc:
     time      = allocated("time",      "rseqc", cluster),
     partition = allocated("partition", "rseqc", cluster),
   threads:
-    allocated("threads", "rseqc", cluster),
+    int(allocated("threads", "rseqc", cluster)),
   shell:
     """
     module load rseqc/4.0.0
@@ -635,7 +635,7 @@ rule inner_distance:
     time      = allocated("time",      "inner_distance", cluster),
     partition = allocated("partition", "inner_distance", cluster),
   threads:
-    allocated("threads", "inner_distance", cluster),
+    int(allocated("threads", "inner_distance", cluster)),
   shell:
     """
     module load rseqc/4.0.0
@@ -661,7 +661,7 @@ rule stats:
     time      = allocated("time",      "stats", cluster),
     partition = allocated("partition", "stats", cluster),
   threads:
-    allocated("threads", "stats", cluster),
+    int(allocated("threads", "stats", cluster)),
   shell:
     """
     module load python/3.8 samtools/1.15 picard/2.26.9
@@ -693,7 +693,7 @@ rule multiqc:
     time      = allocated("time",      "multiqc", cluster),
     partition = allocated("partition", "multiqc", cluster),
   threads:
-    allocated("threads", "multiqc", cluster),
+    int(allocated("threads", "multiqc", cluster)),
   shell:
     """
     module load multiqc/1.9 bismark
@@ -727,7 +727,7 @@ rule get_CpG:
     time      = allocated("time",      "get_CpG", cluster),
     partition = allocated("partition", "get_CpG", cluster),
   threads:
-    allocated("threads", "get_CpG", cluster),
+    int(allocated("threads", "get_CpG", cluster)),
   shell:
     """
     mkdir -p {params.dir1}
@@ -751,7 +751,7 @@ rule get_overlap_meth:
     time      = allocated("time",      "get_overlap_meth", cluster),
     partition = allocated("partition", "get_overlap_meth", cluster),
   threads:
-    allocated("threads", "get_overlap_meth", cluster),
+    int(allocated("threads", "get_overlap_meth", cluster)),
   run:
     df_ref=pd.read_csv(params.map_table,sep='\t',header=None)
     df_ref.columns=['chromosome','start','end','cgid']
@@ -779,7 +779,7 @@ rule run_deconv:
     time      = allocated("time",      "run_deconv", cluster),
     partition = allocated("partition", "run_deconv", cluster),
   threads:
-    allocated("threads", "run_deconv", cluster),
+    int(allocated("threads", "run_deconv", cluster)),
   shell:
     """
     module load python
@@ -801,7 +801,7 @@ rule merge_tables:
     time      = allocated("time",      "merge_tables", cluster),
     partition = allocated("partition", "merge_tables", cluster),
   threads:
-    allocated("threads", "merge_tables", cluster),
+    int(allocated("threads", "merge_tables", cluster)),
   run:
     dfm=pd.read_csv(input[0])
     for f in input[1:]:
@@ -827,7 +827,7 @@ rule run_deconv_merged:
     time      = allocated("time",      "run_deconv_merged", cluster),
     partition = allocated("partition", "run_deconv_merged", cluster),
   threads:
-    allocated("threads", "run_deconv_merged", cluster),
+    int(allocated("threads", "run_deconv_merged", cluster)),
   shell:
     """
     module load python
@@ -850,7 +850,7 @@ rule sorting_CpG_bedgraph:
     time      = allocated("time",      "sorting_CpG_bedgraph", cluster),
     partition = allocated("partition", "sorting_CpG_bedgraph", cluster),
   threads:
-    allocated("threads", "sorting_CpG_bedgraph", cluster),
+    int(allocated("threads", "sorting_CpG_bedgraph", cluster)),
   shell:
     """
     module load bedtools
@@ -872,7 +872,7 @@ rule liftover_bedgraph:
     time      = allocated("time",      "liftover_bedgraph", cluster),
     partition = allocated("partition", "liftover_bedgraph", cluster),
   threads:
-    allocated("threads", "liftover_bedgraph", cluster),
+    int(allocated("threads", "liftover_bedgraph", cluster)),
   shell:
     """
     module load bedtools crossmap
@@ -894,7 +894,7 @@ rule extract_signature_beds:
     time      = allocated("time",      "extract_signature_beds", cluster),
     partition = allocated("partition", "extract_signature_beds", cluster),
   threads:
-    allocated("threads", "extract_signature_beds", cluster),
+    int(allocated("threads", "extract_signature_beds", cluster)),
   shell:
     """
     module load bedtools
@@ -916,7 +916,7 @@ rule aggregate_over_regions:
     time      = allocated("time",      "aggregate_over_regions", cluster),
     partition = allocated("partition", "aggregate_over_regions", cluster),
   threads:
-    allocated("threads", "aggregate_over_regions", cluster),
+    int(allocated("threads", "aggregate_over_regions", cluster)),
   shell:
     """
     module load R
@@ -941,7 +941,7 @@ rule cfDNAme:
     time      = allocated("time",      "cfDNAme", cluster),
     partition = allocated("partition", "cfDNAme", cluster),
   threads:
-    allocated("threads", "cfDNAme", cluster),
+    int(allocated("threads", "cfDNAme", cluster)),
   shell:
     """
     module load R
@@ -980,7 +980,7 @@ rule bsseq_bismark:
     time      = allocated("time",      "bsseq_bismark", cluster),
     partition = allocated("partition", "bsseq_bismark", cluster),
   threads:
-    allocated("threads", "bsseq_bismark", cluster),
+    int(allocated("threads", "bsseq_bismark", cluster)),
   shell:
     """
     module load R
@@ -1012,7 +1012,7 @@ rule combP:
     time      = allocated("time",      "combP", cluster),
     partition = allocated("partition", "combP", cluster),
   threads:
-    allocated("threads", "combP", cluster),
+    int(allocated("threads", "combP", cluster)),
   shell:
     """
     mkdir -p {params.dir}
@@ -1049,7 +1049,7 @@ rule mvp_plots:
     time      = allocated("time",      "mvp_plots", cluster),
     partition = allocated("partition", "mvp_plots", cluster),
   threads:
-    allocated("threads", "mvp_plots", cluster),
+    int(allocated("threads", "mvp_plots", cluster)),
   shell:
     """
     mkdir -p {params.dir}
@@ -1079,7 +1079,7 @@ rule combP_figs:
     time      = allocated("time",      "combP_figs", cluster),
     partition = allocated("partition", "combP_figs", cluster),
   threads:
-    allocated("threads", "combP_figs", cluster),
+    int(allocated("threads", "combP_figs", cluster)),
   shell:
     """
     module load R
@@ -1106,7 +1106,7 @@ rule manhatten:
     time      = allocated("time",      "manhatten", cluster),
     partition = allocated("partition", "manhatten", cluster),
   threads:
-    allocated("threads", "manhatten", cluster),
+    int(allocated("threads", "manhatten", cluster)),
   shell:
     """
     mkdir -p {params.dir}
@@ -1131,7 +1131,7 @@ rule bamsort:
     time      = allocated("time",      "bamsort", cluster),
     partition = allocated("partition", "bamsort", cluster),
   threads:
-    allocated("threads", "bamsort", cluster),
+    int(allocated("threads", "bamsort", cluster)),
   shell:
     """
     module load samtools
@@ -1157,7 +1157,7 @@ rule wgbstools:
     time      = allocated("time",      "wgbstools", cluster),
     partition = allocated("partition", "wgbstools", cluster),
   threads:
-    allocated("threads", "wgbstools", cluster),
+    int(allocated("threads", "wgbstools", cluster)),
   shell:
     """
     mkdir -p {params.outdir}
@@ -1180,7 +1180,7 @@ rule UXM:
     time      = allocated("time",      "UXM", cluster),
     partition = allocated("partition", "UXM", cluster),
   threads:
-    allocated("threads", "UXM", cluster),
+    int(allocated("threads", "UXM", cluster)),
   shell:
     """
     module load samtools bedtools bamtools
