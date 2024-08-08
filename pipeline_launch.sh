@@ -63,7 +63,7 @@ echo $SCRIPTPATH
 ##
 echo "Run snakemake"
 
-CLUSTER_OPTS="sbatch --gres {cluster.gres} --cpus-per-task {cluster.threads} -p {cluster.partition} -t {cluster.time} --mem {cluster.mem} --job-name={params.rname} -e snakejobs/slurm-%j_{params.rname}.out -o snakejobs/slurm-%j_{params.rname}.out"
+CLUSTER_OPTS="sbatch --gres {resources.gres} --cpus-per-task {threads} -p {resources.partition} -t {resources.time} --mem {resources.mem} --job-name={params.rname} -e snakejobs/slurm-%j_{params.rname}.out -o snakejobs/slurm-%j_{params.rname}.out"
 
 if [ $2 == "npr" ]
 then

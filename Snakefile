@@ -5,69 +5,105 @@
 # Last Modified: August, 2022
 #
 #####################################################################################################
-
 from os.path import join
 from snakemake.io import expand, glob_wildcards
-from snakemake.utils import R
 from os import listdir
 import pandas as pd
+import json
+
+
+# Helper functions 
+def allocated(resource, rule, lookup, default="__default__"):
+    """Pulls resource information for a given rule. If a rule does not have any information 
+    for a given resource type, then it will pull from the default. Information is pulled from
+    definitions in the cluster.json (which is used a job submission). This ensures that any 
+    resources used at runtime mirror the resources that were allocated.
+    :param resource <str>: resource type to look in cluster.json (i.e. threads, mem, time, gres)
+    :param rule <str>: rule to lookup its information
+    :param lookup <dict>: Lookup containing allocation information (i.e. cluster.json)
+    :param default <str>: default information to use if rule information cannot be found
+    :return allocation <str>: 
+        allocation information for a given resource type for a given rule
+    """
+
+    try: 
+        # Try to get allocation information
+        # for a given rule
+        allocation = lookup[rule][resource]
+    except KeyError:
+        # Use default allocation information
+        allocation = lookup[default][resource]
+    
+    return allocation
+
 
 # Global workflow variables
-sample_file= config["samples"]
-rawdata_dir= config["rawdata_dir"]
-working_dir= config["result_dir"]
+sample_file = config["samples"]
+rawdata_dir = config["rawdata_dir"]
+working_dir = config["result_dir"]
 
 # References
-hg38_fa= config["hg38_fa"]
-phage_fa= config["phage_fa"]
-hg38_gtf= config["hg38_gtf"]
-hg38_rRNA_intervals= config["hg38_rRNA_intervals"]
-hg38_bed_ref= config["hg38_bed_ref"]
-hg38_refFlat= config["hg38_refFlat"]
-bisulphite_genome_path= config["bisulphite_ref"]
-phage_genome_path= config["phage_ref"]
-bisulphite_fa= config["bisulphite_fa"]
-species= config["species"]
-REF_ATLAS= config["REF_ATLAS"]
-CpG_MAP_TABLE= config["CpG_MAP_TABLE"]
-wgbsDir= config["wgbsDir"]
-mode= config["Mode"]
+hg38_fa                = config["hg38_fa"]
+phage_fa               = config["phage_fa"]
+hg38_gtf               = config["hg38_gtf"]
+hg38_rRNA_intervals    = config["hg38_rRNA_intervals"]
+hg38_bed_ref           = config["hg38_bed_ref"]
+hg38_refFlat           = config["hg38_refFlat"]
+bisulphite_genome_path = config["bisulphite_ref"]
+phage_genome_path      = config["phage_ref"]
+bisulphite_fa          = config["bisulphite_fa"]
+species                = config["species"]
+REF_ATLAS              = config["REF_ATLAS"]
+CpG_MAP_TABLE          = config["CpG_MAP_TABLE"]
+wgbsDir                = config["wgbsDir"]
+mode                   = config["Mode"]
 
-REF_MARKERS=config["REF_MARKERS"]
-REF_IDS=config["REF_IDS"]
-GOLD_MARKERS=config["GOLD_MARKERS"]
-HG38TOHG19=config["HG38TOHG19"]
+REF_MARKERS            = config["REF_MARKERS"]
+REF_IDS                = config["REF_IDS"]
+GOLD_MARKERS           = config["GOLD_MARKERS"]
+HG38TOHG19             = config["HG38TOHG19"]
 
 
 if species == "hg38":
-    atlas_bed= config["atlas_bed_hg38"]
-    atlas_tsv= config["atlas_tsv_hg38"]
+    atlas_bed = config["atlas_bed_hg38"]
+    atlas_tsv = config["atlas_tsv_hg38"]
 
 if species == "hg19":
-    atlas_bed= config["atlas_bed_hg19"]
-    atlas_tsv= config["atlas_tsv_hg19"]
+    atlas_bed = config["atlas_bed_hg19"]
+    atlas_tsv = config["atlas_tsv_hg19"]
 
 # sample list
-df = pd.read_csv(sample_file, header=0, sep='\t')
-SAMPLES=list(set(df['samples'].tolist()))
-GROUPS=list(set(df['group'].tolist()))
+df      = pd.read_csv(sample_file, header=0, sep='\t')
+SAMPLES = list(set(df['samples'].tolist()))
+GROUPS  = list(set(df['group'].tolist()))
 
+# Read in resource information,
+# containing information about 
+# threads, mem, walltimes, etc.
+with open(join('cluster.json')) as fh:
+    cluster = json.load(fh)
 
-CHRS = ['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20','chr21','chr22','chr23','chrX']
+CHRS = [
+  'chr1', 'chr2', 'chr3', 
+  'chr4', 'chr5', 'chr6', 
+  'chr7', 'chr8', 'chr9',
+  'chr10', 'chr11', 'chr12',
+  'chr13', 'chr14', 'chr15', 
+  'chr16', 'chr17', 'chr18', 
+  'chr19', 'chr20', 'chr21', 
+  'chr22', 'chr23', 'chrX'
+]
 
 RN = ['R1', 'R2']
 
 
 dmr_dir = working_dir
-
 if mode == "dmr":
   # contrasts list
   df2 = pd.read_csv(working_dir + "/contrasts.txt", header=0, sep='\t')
   GROUPS=list(set(df2['comparisons'].tolist()))
   GRPSAMPLES=list(set(df2['samples'].tolist()))
   dmr_dir = join(working_dir, "dmr", GROUPS[0])
-  #mkdir -p dmr_dir
-
 
 
 def output_from_modes():
@@ -192,11 +228,19 @@ rule raw_data_links:
     params:
       rname="raw_data_links",
       dir=directory(join(working_dir, "raw")),
+    resources:
+      mem       = allocated("mem",       "raw_data_links", cluster),
+      gres      = allocated("gres",      "raw_data_links", cluster),
+      time      = allocated("time",      "raw_data_links", cluster),
+      partition = allocated("partition", "raw_data_links", cluster),
+    threads:
+      allocated("threads", "raw_data_links", cluster),
     shell:
       """
       mkdir -p {params.dir}
       ln -s {input} {output}
       """
+
 
 ## Run fastqc on raw data to visually assess quality
 rule raw_fastqc:
@@ -208,8 +252,13 @@ rule raw_fastqc:
       rname="raw_fastqc",
       dir=directory(join(working_dir, "rawQC")),
       batch='--cpus-per-task=2 --mem=8g --time=8:00:00',
+    resources:
+      mem       = allocated("mem",       "raw_fastqc", cluster),
+      gres      = allocated("gres",      "raw_fastqc", cluster),
+      time      = allocated("time",      "raw_fastqc", cluster),
+      partition = allocated("partition", "raw_fastqc", cluster),
     threads:
-      2
+      allocated("threads", "raw_fastqc", cluster),
     shell:
       """
       module load fastqc/0.11.9
@@ -234,14 +283,20 @@ rule trimGalore:
       command="--fastqc --clip_R1 10 --clip_R2 10 --three_prime_clip_R1 10 --three_prime_clip_R2 10 --length 50 --gzip",
       batch='--cpus-per-task=16 --partition=norm --gres=lscratch:100 --mem=25g --time=10:00:00',
       workdir = working_dir,
+    resources:
+      mem       = allocated("mem",       "trimGalore", cluster),
+      gres      = allocated("gres",      "trimGalore", cluster),
+      time      = allocated("time",      "trimGalore", cluster),
+      partition = allocated("partition", "trimGalore", cluster),
     threads:
-      8
+      allocated("threads", "trimGalore", cluster),
     shell:
       """
       module load trimgalore/0.6.7
       mkdir -p {params.dir}
       trim_galore --paired --cores {threads} {params.command} --basename {params.tag} --output_dir {params.dir} --fastqc_args "--outdir {params.fastqcdir}"  {input.F1} {input.F2}
       """
+
 
 rule bbmerge:
     input:
@@ -252,8 +307,15 @@ rule bbmerge:
     params:
       rname='pl:bbmerge',
       script_dir=join(working_dir,"scripts"),
-    threads: 4
-    shell: """
+    resources:
+      mem       = allocated("mem",       "bbmerge", cluster),
+      gres      = allocated("gres",      "bbmerge", cluster),
+      time      = allocated("time",      "bbmerge", cluster),
+      partition = allocated("partition", "bbmerge", cluster),
+    threads:
+      allocated("threads", "bbmerge", cluster),
+    shell: 
+      """
       # Get encoding of Phred Quality Scores
       module load python
       encoding=$(python {params.script_dir}/phred_encoding.py {input.R1})
@@ -262,7 +324,8 @@ rule bbmerge:
       module load bbtools/38.87
       bbtools bbmerge-auto in1={input.R1} in2={input.R2} qin=${{encoding}} \
       ihist={output} k=62 extend2=200 rem ecct -Xmx900G
-          """
+      """
+
 
 rule fastq_screen:
     input:
@@ -283,7 +346,13 @@ rule fastq_screen:
       outdir2 = join(working_dir,"FQscreen2"),
       fastq_screen_config="/data/CCBR_Pipeliner/db/PipeDB/lib/fastq_screen.conf",
       fastq_screen_config2="/data/CCBR_Pipeliner/db/PipeDB/lib/fastq_screen_2.conf",
-    threads: 24
+    resources:
+      mem       = allocated("mem",       "fastq_screen", cluster),
+      gres      = allocated("gres",      "fastq_screen", cluster),
+      time      = allocated("time",      "fastq_screen", cluster),
+      partition = allocated("partition", "fastq_screen", cluster),
+    threads:
+      allocated("threads", "fastq_screen", cluster),
     shell:
       """
       module load fastq_screen/0.14.1
@@ -296,6 +365,7 @@ rule fastq_screen:
         --threads {threads} --subset 1000000 \
         --aligner bowtie2 --force {input.file1} {input.file2}
       """
+
 
 rule kraken_pe:
     input:
@@ -311,7 +381,13 @@ rule kraken_pe:
         #bacdb="/fdb/kraken/20170202_bacteria",
         bacdb="/fdb/kraken/20210223_standard_kraken2",
         prefix="{samples}",
-    threads: 24
+    resources:
+      mem       = allocated("mem",       "kraken_pe", cluster),
+      gres      = allocated("gres",      "kraken_pe", cluster),
+      time      = allocated("time",      "kraken_pe", cluster),
+      partition = allocated("partition", "kraken_pe", cluster),
+    threads:
+      allocated("threads", "kraken_pe", cluster),
     shell:
       """
       module load kraken
@@ -340,7 +416,6 @@ rule kraken_pe:
 # If user provided different genome version, then run this "prep_bisulphite_genome" rule:
 #
 ##########
-
 rule prep_bisulphite_genome:
     input:
       bisulphite_fa
@@ -351,8 +426,13 @@ rule prep_bisulphite_genome:
       rname="prep_bisulphite_genome",
       dir=directory(join(bisulphite_genome_path, species)),
       batch='--cpus-per-task=16 --partition=norm --gres=lscratch:100 --mem=20g --time=2:00:00',
+    resources:
+      mem       = allocated("mem",       "prep_bisulphite_genome", cluster),
+      gres      = allocated("gres",      "prep_bisulphite_genome", cluster),
+      time      = allocated("time",      "prep_bisulphite_genome", cluster),
+      partition = allocated("partition", "prep_bisulphite_genome", cluster),
     threads:
-      16
+      allocated("threads", "prep_bisulphite_genome", cluster),
     shell:
       """
       module load bismark/0.23.0
@@ -361,6 +441,7 @@ rule prep_bisulphite_genome:
       #cp reference_genome {params.dir}/genome.fa
       bismark_genome_preparation --verbose --parallel {threads} {params.dir} #--single_fasta
       """
+
 
 rule bismark_align:
     input:
@@ -382,8 +463,13 @@ rule bismark_align:
       outbam=join(working_dir, "bismarkAlign/{samples}_val_1_bismark_bt2_pe.bam"),
       R1=join(working_dir,"bismarkAlign/{samples}_val_1_bismark_bt2_PE_report.txt"),
       R2=join(working_dir,"bismarkAlign/{samples}.bismark_bt2_PE_report.txt"),
+    resources:
+      mem       = allocated("mem",       "bismark_align", cluster),
+      gres      = allocated("gres",      "bismark_align", cluster),
+      time      = allocated("time",      "bismark_align", cluster),
+      partition = allocated("partition", "bismark_align", cluster),
     threads:
-      16
+      allocated("threads", "bismark_align", cluster),
     shell:
       """
       module load bismark/0.23.0 samtools
@@ -393,6 +479,7 @@ rule bismark_align:
       mv {params.R1} {params.R2}
       samtools flagstat -@ {threads} {output.B1} > {output.B2}
       """
+
 
 rule bismark_dedup:
     input:
@@ -407,8 +494,13 @@ rule bismark_dedup:
       dir=directory(join(working_dir, "bismarkAlign")),
       prefix=join(working_dir, "bismarkAlign/{samples}.bismark_bt2_pe"),
       genome=bisulphite_fa,
+    resources:
+      mem       = allocated("mem",       "bismark_dedup", cluster),
+      gres      = allocated("gres",      "bismark_dedup", cluster),
+      time      = allocated("time",      "bismark_dedup", cluster),
+      partition = allocated("partition", "bismark_dedup", cluster),
     threads:
-      16
+      allocated("threads", "bismark_dedup", cluster),
     shell:
       """
       module load bismark/0.23.0
@@ -419,6 +511,7 @@ rule bismark_dedup:
       samtools view -T {params.genome} -@ 16 -h -C {output.B1} > {output.C1}
       samtools flagstat -@ {threads} {output.B1} > {output.B2}
       """
+
 
 rule bismark_extract:
   input:
@@ -431,12 +524,20 @@ rule bismark_extract:
     bismark_index=join(bisulphite_genome_path,species),
     outdir=join(working_dir, "CpG/{samples}"),
     genome=bisulphite_fa,
+  resources:
+    mem       = lambda wc, attempt: allocated("mem",       "bismark_extract", cluster) if attempt == 1 else "900g",
+    gres      = allocated("gres",      "bismark_extract", cluster),
+    time      = allocated("time",      "bismark_extract", cluster),
+    partition = lambda wc, attempt: allocated("partition", "bismark_extract", cluster) if attempt == 1 else "largemem",
+  threads:
+    allocated("threads", "bismark_extract", cluster),
   shell:
     """
     mkdir -p {params.outdir}
     module load bismark samtools bowtie
-    bismark_methylation_extractor --paired-end --no_overlap --multicore 8 --gzip --report --bedGraph --counts --buffer_size 100G --no_header --cytosine_report --output {params.outdir} --scaffolds --genome_folder {params.bismark_index} {input.bam}
+    bismark_methylation_extractor --paired-end --no_overlap --multicore 8 --gzip --report --bedGraph --counts --buffer_size '50%' --no_header --cytosine_report --output {params.outdir} --scaffolds --genome_folder {params.bismark_index} {input.bam}
     """
+
 
 rule prep_bisulphite_phage_genome:
     input:
@@ -448,8 +549,13 @@ rule prep_bisulphite_phage_genome:
       rname="prep_phage_genome",
       dir=directory(phage_genome_path),
       batch='--cpus-per-task=16 --partition=norm --gres=lscratch:100 --mem=20g --time=2:00:00',
+    resources:
+      mem       = allocated("mem",       "prep_bisulphite_phage_genome", cluster),
+      gres      = allocated("gres",      "prep_bisulphite_phage_genome", cluster),
+      time      = allocated("time",      "prep_bisulphite_phage_genome", cluster),
+      partition = allocated("partition", "prep_bisulphite_phage_genome", cluster),
     threads:
-      16
+      allocated("threads", "prep_bisulphite_phage_genome", cluster),
     shell:
       """
       module load bismark/0.23.0
@@ -458,6 +564,7 @@ rule prep_bisulphite_phage_genome:
       cp reference_genome {params.dir}/genome.fa
       bismark_genome_preparation --verbose --parallel {threads} {params.dir} #--single_fasta
       """
+
 
 rule bismark_phage:
   input:
@@ -471,8 +578,13 @@ rule bismark_phage:
     genome_dir=directory(phage_genome_path),
     command="--bowtie2 -N 1 --bam -L 22 --X 1000 --un --ambiguous -p 2 --score_min L,-0.6,-0.6",
     batch='--cpus-per-task=16 --partition=norm --gres=lscratch:100 --mem=100g --time=10:00:00',
+  resources:
+    mem       = allocated("mem",       "bismark_phage", cluster),
+    gres      = allocated("gres",      "bismark_phage", cluster),
+    time      = allocated("time",      "bismark_phage", cluster),
+    partition = allocated("partition", "bismark_phage", cluster),
   threads:
-    16
+    allocated("threads", "bismark_phage", cluster),
   shell:
     """
     module load bismark/0.23.0
@@ -491,6 +603,13 @@ rule rseqc:
     bedref=hg38_bed_ref,
     dir=join(working_dir,"rseqc"),
     rname="pl:rseqc",
+  resources:
+    mem       = allocated("mem",       "rseqc", cluster),
+    gres      = allocated("gres",      "rseqc", cluster),
+    time      = allocated("time",      "rseqc", cluster),
+    partition = allocated("partition", "rseqc", cluster),
+  threads:
+    allocated("threads", "rseqc", cluster),
   shell:
     """
     module load rseqc/4.0.0
@@ -498,6 +617,7 @@ rule rseqc:
     infer_experiment.py -r {params.bedref} -i {input.file1} -s 1000000 > {output.out1}
     read_distribution.py -i {input.file1} -r {params.bedref} > {output.out2}
     """
+
 
 rule inner_distance:
   input:
@@ -509,6 +629,13 @@ rule inner_distance:
     dir=join(working_dir,"rseqc"),
     genemodel=hg38_bed_ref,
     rname="pl:inner_distance",
+  resources:
+    mem       = allocated("mem",       "inner_distance", cluster),
+    gres      = allocated("gres",      "inner_distance", cluster),
+    time      = allocated("time",      "inner_distance", cluster),
+    partition = allocated("partition", "inner_distance", cluster),
+  threads:
+    allocated("threads", "inner_distance", cluster),
   shell:
     """
     module load rseqc/4.0.0
@@ -528,6 +655,13 @@ rule stats:
     rrnalist=hg38_rRNA_intervals,
     picardstrand="SECOND_READ_TRANSCRIPTION_STRAND",
     statscript=join("workflow", "scripts", "bam_count_concord_stats.py"),
+  resources:
+    mem       = allocated("mem",       "stats", cluster),
+    gres      = allocated("gres",      "stats", cluster),
+    time      = allocated("time",      "stats", cluster),
+    partition = allocated("partition", "stats", cluster),
+  threads:
+    allocated("threads", "stats", cluster),
   shell:
     """
     module load python/3.8 samtools/1.15 picard/2.26.9
@@ -553,6 +687,13 @@ rule multiqc:
     dir=working_dir,
     bis_dir=directory(join(working_dir,"bismarkAlign")),
     script_dir=join(working_dir,"scripts"),
+  resources:
+    mem       = allocated("mem",       "multiqc", cluster),
+    gres      = allocated("gres",      "multiqc", cluster),
+    time      = allocated("time",      "multiqc", cluster),
+    partition = allocated("partition", "multiqc", cluster),
+  threads:
+    allocated("threads", "multiqc", cluster),
   shell:
     """
     module load multiqc/1.9 bismark
@@ -565,10 +706,10 @@ rule multiqc:
     multiqc --ignore '*/.singularity/*' -f --interactive .
     """
 
-############### Deconvolution rules begin here
-## run following rules in dcv mode only
+############### 
+# Deconvolution rules begin here
+# run following rules in dcv mode only
 #################
-
 rule get_CpG:
   input:
     join(working_dir, "CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"),
@@ -580,6 +721,13 @@ rule get_CpG:
     script_dir=join(working_dir,"scripts"),
     dir1=join(working_dir,"CpG_CSV"),
     dir2=join(working_dir,"deconvolution_CSV"),
+  resources:
+    mem       = allocated("mem",       "get_CpG", cluster),
+    gres      = allocated("gres",      "get_CpG", cluster),
+    time      = allocated("time",      "get_CpG", cluster),
+    partition = allocated("partition", "get_CpG", cluster),
+  threads:
+    allocated("threads", "get_CpG", cluster),
   shell:
     """
     mkdir -p {params.dir1}
@@ -587,6 +735,7 @@ rule get_CpG:
     module load R
     Rscript {params.script_dir}/get_methy.R {input} {wildcards.samples} {params.cutoff} {output}
     """
+
 
 rule get_overlap_meth:
   input:
@@ -596,6 +745,13 @@ rule get_overlap_meth:
   params:
     rname="get_overlap_meth",
     map_table=CpG_MAP_TABLE,
+  resources:
+    mem       = allocated("mem",       "get_overlap_meth", cluster),
+    gres      = allocated("gres",      "get_overlap_meth", cluster),
+    time      = allocated("time",      "get_overlap_meth", cluster),
+    partition = allocated("partition", "get_overlap_meth", cluster),
+  threads:
+    allocated("threads", "get_overlap_meth", cluster),
   run:
     df_ref=pd.read_csv(params.map_table,sep='\t',header=None)
     df_ref.columns=['chromosome','start','end','cgid']
@@ -605,6 +761,7 @@ rule get_overlap_meth:
     dfm=dfm.drop(labels=['chromosome','start','end'],axis=1)
     dfm=dfm.set_index('cgid')
     dfm.to_csv(output[0])
+
 
 rule run_deconv:
   input:
@@ -616,12 +773,20 @@ rule run_deconv:
     dir=join(working_dir,"deconvolution_CSV"),
     rname="run_deconv",
     ref=REF_ATLAS,
+  resources:
+    mem       = allocated("mem",       "run_deconv", cluster),
+    gres      = allocated("gres",      "run_deconv", cluster),
+    time      = allocated("time",      "run_deconv", cluster),
+    partition = allocated("partition", "run_deconv", cluster),
+  threads:
+    allocated("threads", "run_deconv", cluster),
   shell:
     """
     module load python
     cd {params.dir}
     python {params.script_dir}/deconvolve2.py --atlas_path {params.ref} --residuals {input}  > {output}  2>&1
     """
+
 
 rule merge_tables:
   input:
@@ -630,12 +795,20 @@ rule merge_tables:
     join(working_dir, "deconvolution_CSV/total.csv"),
   params:
     rname="merge_tables",
+  resources:
+    mem       = allocated("mem",       "merge_tables", cluster),
+    gres      = allocated("gres",      "merge_tables", cluster),
+    time      = allocated("time",      "merge_tables", cluster),
+    partition = allocated("partition", "merge_tables", cluster),
+  threads:
+    allocated("threads", "merge_tables", cluster),
   run:
     dfm=pd.read_csv(input[0])
     for f in input[1:]:
     	df=pd.read_csv(f)
     	dfm=pd.merge(dfm,df,on='cgid',how='outer')
     dfm.to_csv(output[0],index=False)
+
 
 rule run_deconv_merged:
   input:
@@ -648,6 +821,13 @@ rule run_deconv_merged:
     ref=REF_ATLAS,
     dir=join(working_dir,"deconvolution_CSV"),
     script_dir=join(working_dir,"scripts"),
+  resources:
+    mem       = allocated("mem",       "run_deconv_merged", cluster),
+    gres      = allocated("gres",      "run_deconv_merged", cluster),
+    time      = allocated("time",      "run_deconv_merged", cluster),
+    partition = allocated("partition", "run_deconv_merged", cluster),
+  threads:
+    allocated("threads", "run_deconv_merged", cluster),
   shell:
     """
     module load python
@@ -655,8 +835,8 @@ rule run_deconv_merged:
     python {params.script_dir}/deconvolve2.py --atlas_path {params.ref} --residuals {input}
     """
 
-###############CFDNAME RULES######################
 
+###############CFDNAME RULES######################
 rule sorting_CpG_bedgraph:
   input:
     bed=join(working_dir,"CpG/{samples}/{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"),
@@ -664,11 +844,19 @@ rule sorting_CpG_bedgraph:
     bed=temp(join(working_dir,"CpG/{samples}/{samples}.mapped_autosomal_CpG.bedGraph.tmp")),
   params:
     rname="pl:format1",
+  resources:
+    mem       = allocated("mem",       "sorting_CpG_bedgraph", cluster),
+    gres      = allocated("gres",      "sorting_CpG_bedgraph", cluster),
+    time      = allocated("time",      "sorting_CpG_bedgraph", cluster),
+    partition = allocated("partition", "sorting_CpG_bedgraph", cluster),
+  threads:
+    allocated("threads", "sorting_CpG_bedgraph", cluster),
   shell:
     """
     module load bedtools
     zcat {input.bed} | tail -n +2 | bedtools sort -i - > {output.bed}
     """
+
 
 rule liftover_bedgraph:
   input:
@@ -678,11 +866,19 @@ rule liftover_bedgraph:
   params:
     rname="pl:format2",
     lift_file=HG38TOHG19,
+  resources:
+    mem       = allocated("mem",       "liftover_bedgraph", cluster),
+    gres      = allocated("gres",      "liftover_bedgraph", cluster),
+    time      = allocated("time",      "liftover_bedgraph", cluster),
+    partition = allocated("partition", "liftover_bedgraph", cluster),
+  threads:
+    allocated("threads", "liftover_bedgraph", cluster),
   shell:
     """
     module load bedtools crossmap
     crossmap bed {params.lift_file} {input.bed} {output.graph}
     """
+
 
 rule extract_signature_beds:
   input:
@@ -692,11 +888,19 @@ rule extract_signature_beds:
   params:
     rname="pl:format3",
     markers=GOLD_MARKERS,
+  resources:
+    mem       = allocated("mem",       "extract_signature_beds", cluster),
+    gres      = allocated("gres",      "extract_signature_beds", cluster),
+    time      = allocated("time",      "extract_signature_beds", cluster),
+    partition = allocated("partition", "extract_signature_beds", cluster),
+  threads:
+    allocated("threads", "extract_signature_beds", cluster),
   shell:
     """
     module load bedtools
     bedtools sort -i {input.graph} | bedtools intersect -wo -a {params.markers} -b stdin -sorted | awk '$6-$5==1 {{print $0}}' | awk 'NF{{NF-=1}};1' > {output.sort}
     """
+
 
 rule aggregate_over_regions:
   input:
@@ -706,11 +910,19 @@ rule aggregate_over_regions:
   params:
     rname="pl:format4",
     script_dir=join(working_dir,"scripts"),
+  resources:
+    mem       = allocated("mem",       "aggregate_over_regions", cluster),
+    gres      = allocated("gres",      "aggregate_over_regions", cluster),
+    time      = allocated("time",      "aggregate_over_regions", cluster),
+    partition = allocated("partition", "aggregate_over_regions", cluster),
+  threads:
+    allocated("threads", "aggregate_over_regions", cluster),
   shell:
     """
     module load R
     Rscript {params.script_dir}/aggregate_over_regions.R {input.sort} {output.tsv}
     """
+
 
 rule cfDNAme:
   input:
@@ -723,6 +935,13 @@ rule cfDNAme:
     sampleName="{samples}",
     reference_markers=REF_MARKERS,
     reference_IDs=REF_IDS,
+  resources:
+    mem       = allocated("mem",       "cfDNAme", cluster),
+    gres      = allocated("gres",      "cfDNAme", cluster),
+    time      = allocated("time",      "cfDNAme", cluster),
+    partition = allocated("partition", "cfDNAme", cluster),
+  threads:
+    allocated("threads", "cfDNAme", cluster),
   shell:
     """
     module load R
@@ -738,10 +957,11 @@ rule cfDNAme:
     colon_5/hsc_5/hsc_2/spleen_1/spleen_2/spleen_3/spleen_4/
     """
 
-############### Differential methylation rules begin here
-## run following rules in dmr mode only
-#################
 
+############### 
+# Differential methylation rules begin here
+# run following rules in dmr mode only
+#################
 rule bsseq_bismark:
   input:
     bizfile=join(working_dir,"contrasts.txt"),
@@ -754,14 +974,20 @@ rule bsseq_bismark:
     cov="2",
     sample_prop="0.25",
     script_dir=join(working_dir, "dmr","scripts"),
+  resources:
+    mem       = allocated("mem",       "bsseq_bismark", cluster),
+    gres      = allocated("gres",      "bsseq_bismark", cluster),
+    time      = allocated("time",      "bsseq_bismark", cluster),
+    partition = allocated("partition", "bsseq_bismark", cluster),
   threads:
-    4
+    allocated("threads", "bsseq_bismark", cluster),
   shell:
     """
     module load R
     mkdir -p {params.dir}
     Rscript {params.script_dir}/bsseq_lm.R {params.chr} {input.bizfile} {output.bed1} {params.sample_prop} {params.cov}
     """
+
 
 rule combP:
   input:
@@ -780,6 +1006,13 @@ rule combP:
     homer_dir=join(dmr_dir,"homer"),
     dist="300",
     step="60",
+  resources:
+    mem       = allocated("mem",       "combP", cluster),
+    gres      = allocated("gres",      "combP", cluster),
+    time      = allocated("time",      "combP", cluster),
+    partition = allocated("partition", "combP", cluster),
+  threads:
+    allocated("threads", "combP", cluster),
   shell:
     """
     mkdir -p {params.dir}
@@ -793,6 +1026,7 @@ rule combP:
     annotatePeaks.pl {output.homerInput} hg38 -annStats {output.homerAnn} > {output.homerOutput}
     awk 'NR==FNR{{a[$4]=$5;next}}NR!=FNR{{c=$1; if(c in a){{print $0"\t"a[c]}}}}' {output.homerInput} {output.homerOutput} > {output.homerOutput2}
     """
+
 
 rule mvp_plots:
   input:
@@ -808,7 +1042,14 @@ rule mvp_plots:
     groups='{group}_{chr}',
     dir=join(dmr_dir, "combP"),
     fdr_cutoff="0.05",
-    highlight="20"
+    highlight="20",
+  resources:
+    mem       = allocated("mem",       "mvp_plots", cluster),
+    gres      = allocated("gres",      "mvp_plots", cluster),
+    time      = allocated("time",      "mvp_plots", cluster),
+    partition = allocated("partition", "mvp_plots", cluster),
+  threads:
+    allocated("threads", "mvp_plots", cluster),
   shell:
     """
     mkdir -p {params.dir}
@@ -816,6 +1057,7 @@ rule mvp_plots:
     Rscript {params.script_dir}/mvp_plots.R {input.dir} {params.fdr_cutoff} {params.highlight} {output.miami} {output.violin}
     ## {output.pie_cpg} {output.pie_genic}
     """
+
 
 rule combP_figs:
   input:
@@ -831,6 +1073,13 @@ rule combP_figs:
     dir=join(dmr_dir, "figs"),
     prefix=join(dmr_dir, "combP/{group}_chr"),
     script_dir=join(dmr_dir,"scripts"),
+  resources:
+    mem       = allocated("mem",       "combP_figs", cluster),
+    gres      = allocated("gres",      "combP_figs", cluster),
+    time      = allocated("time",      "combP_figs", cluster),
+    partition = allocated("partition", "combP_figs", cluster),
+  threads:
+    allocated("threads", "combP_figs", cluster),
   shell:
     """
     module load R
@@ -839,6 +1088,7 @@ rule combP_figs:
     Rscript {params.script_dir}/combp_Manhatten.R {output.p1} {output.f3}
     Rscript {params.script_dir}/combp_GREAT.R {output.p1} {output.f1} {output.o1} {output.o2}
     """
+
 
 rule manhatten:
   input:
@@ -850,6 +1100,13 @@ rule manhatten:
     dir=join(dmr_dir, "figs"),
     rname="manhatten",
     script_dir=join(dmr_dir,"scripts"),
+  resources:
+    mem       = allocated("mem",       "manhatten", cluster),
+    gres      = allocated("gres",      "manhatten", cluster),
+    time      = allocated("time",      "manhatten", cluster),
+    partition = allocated("partition", "manhatten", cluster),
+  threads:
+    allocated("threads", "manhatten", cluster),
   shell:
     """
     mkdir -p {params.dir}
@@ -868,12 +1125,20 @@ rule bamsort:
   params:
     rname="pl:bamsort",
     reference="/data/NHLBI_IDSS/references/Bismark_Genomes/hg38/genome.fa",
+  resources:
+    mem       = allocated("mem",       "bamsort", cluster),
+    gres      = allocated("gres",      "bamsort", cluster),
+    time      = allocated("time",      "bamsort", cluster),
+    partition = allocated("partition", "bamsort", cluster),
+  threads:
+    allocated("threads", "bamsort", cluster),
   shell:
     """
     module load samtools
     samtools sort -@ 12 --reference /data/NHLBI_IDSS/references/Bismark_Genomes/hg38/genome.fa {input.bam} > {output.bam}
     samtools index -@ 12 {output.bam}
     """
+
 
 rule wgbstools:
   input:
@@ -886,12 +1151,20 @@ rule wgbstools:
     ref=species,
     outdir=join(working_dir,"UXM"),
     script_dir=join(working_dir,"scripts"),
+  resources:
+    mem       = allocated("mem",       "wgbstools", cluster),
+    gres      = allocated("gres",      "wgbstools", cluster),
+    time      = allocated("time",      "wgbstools", cluster),
+    partition = allocated("partition", "wgbstools", cluster),
+  threads:
+    allocated("threads", "wgbstools", cluster),
   shell:
     """
     mkdir -p {params.outdir}
     module load samtools bedtools bamtools
     /data/NHLBI_IDSS/references/UXM/wgbstools bam2pat --genome hg38  -L /data/NHLBI_IDSS/references/UXM/supplemental/Atlas.U25.l4.hg38.full.bed --out_dir {params.outdir} -@ 12 {input.bam}
     """
+
 
 rule UXM:
   input:
@@ -901,6 +1174,13 @@ rule UXM:
   params:
     rname="pl:UXM",
     atlas="/data/NHLBI_IDSS/references/UXM/supplemental/Atlas.U250.l4.hg38.full.tsv",
+  resources:
+    mem       = allocated("mem",       "UXM", cluster),
+    gres      = allocated("gres",      "UXM", cluster),
+    time      = allocated("time",      "UXM", cluster),
+    partition = allocated("partition", "UXM", cluster),
+  threads:
+    allocated("threads", "UXM", cluster),
   shell:
     """
     module load samtools bedtools bamtools
