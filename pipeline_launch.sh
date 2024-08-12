@@ -10,8 +10,6 @@ module load python/3.7
 module load snakemake/7.32.4
 module load R
 
-cd $SLURM_SUBMIT_DIR
-
 ##
 ## Test commandline arguments
 ##
