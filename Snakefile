@@ -664,7 +664,7 @@ rule stats:
     int(allocated("threads", "stats", cluster)),
   shell:
     """
-    module load python/3.8 samtools/1.15 picard/2.26.9
+    module load python/3.8 samtools/1.15 picard/2.27.3
     java -Xmx110g -jar ${{PICARDJARPATH}}/picard.jar CollectRnaSeqMetrics REF_FLAT={params.refflat} I={input.file1} O={output.outstar1} RIBOSOMAL_INTERVALS={params.rrnalist} STRAND_SPECIFICITY=SECOND_READ_TRANSCRIPTION_STRAND TMP_DIR=/lscratch/$SLURM_JOBID  VALIDATION_STRINGENCY=SILENT;
     sed -i 's/CollectRnaSeqMetrics/picard.analysis.CollectRnaSeqMetrics/g' {output.outstar1}
     samtools flagstat {input.file1} > {output.outstar2};
