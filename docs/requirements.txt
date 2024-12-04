@@ -6,7 +6,7 @@ GitPython==3.1.7
 htmlmin==0.1.12
 importlib-metadata>=3.10
 Jinja2==2.11.3
-joblib==0.16.0
+joblib==1.2.0
 jsmin==3.0.0
 livereload==2.6.1
 lunr==0.5.8
