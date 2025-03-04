@@ -1,9 +1,0 @@
-sample  group
-S1	GA
-S2	GA
-S3	GB
-S4	GB
-S5	GC
-S6	GC
-S1	GA
-S2	GA

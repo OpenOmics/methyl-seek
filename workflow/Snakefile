@@ -1,0 +1,125 @@
+# Standard library imports 
+from os.path import join
+import json
+# 3rd party imports from pypi
+from snakemake.io import expand
+import pandas as pd
+# Local imports
+from scripts.common import (
+    allocated,
+    provided,
+    str_bool
+)
+
+
+# Global workflow variables
+GENOME         = config["options"]["genome"]                                         # Reference genome, i.e. hg38, hg19, mm10 
+working_dir    = config["options"]["output"]                                         # Output directory or the working directory
+dmr_dir        = join(working_dir, "dmr")                                            # Base output directory for diff methylation analyses
+mode           = config["references"][GENOME]["SUPPORTED_MODES"]                     # Supported run modes for genome, i.e. ["run", "dmr", "dcv"]
+CONTRASTS_FILE = config["options"]["contrasts"]                                      # Contrasts file containing dmr comparisons
+GROUPS_FILE    = config["options"]["groups"]                                         # Groups file to map samples to groups
+SAMPLES        = list(set(config["samples"]))                                        # List of sample base names
+GROUPS         = list(set(config["project"]["groups"].keys()))                       # Group to sample mappings, i.e. "G1": ["s1", "s2"]
+CONTRASTS      = list(config["project"]["contrast"])                                 # Nest list containing contrasts, i.e. [["G2", "G1"], ...]
+COMPARISONS    = list(set(["{}-vs-{}".format(cmp[0],cmp[1]) for cmp in CONTRASTS]))  # Comparisons string, i.e. ["G2", "G1"] becomes "G2-vs-G1"
+RN             = ['R1', 'R2']                                                        # Paired-end read identifiers
+run_dcv_mode   = str_bool(
+  config['options']['cell_free_deconvolution']                                       # Run cell free DNA rules to deconvolute tissue source 
+) and 'dcv' in mode                                                                  # Default: False, also only hg38 works with this mode
+run_dmr_mode   = str_bool(                                                           
+  config['options']['differential_methylation_analysis']                             # Run differential methylation rules
+)                                                                                    # Default: False, also needs groups and contrasts file
+
+
+# Standard set of required references files
+genome_fa              = config["references"][GENOME]["GENOME_FASTA"]                 # Genomic FASTA file
+bisulphite_genome_path = config["references"][GENOME]["BISULPHITE_REF"]               # Base path to bismark references
+bisulphite_fa          = config["references"][GENOME]["BISULPHITE_FA"]                # Bismark genomic FASTA file
+species                = config["references"][GENOME]["SPECIES"]                      # Reference genome alias, i.e hg38, mm10
+CHRS                   = config["references"][GENOME]["CHRS"]                         # Main autosomal chromosomes plus chrX
+REF_ATLAS              = config["references"][GENOME].get("METHATLAS_REF", "")        # Methylation Atlas reference
+CpG_MAP_TABLE          = config["references"][GENOME].get("METHATLAS_CpG_TABLE", "")  # Methylation Atlas reference
+REF_MARKERS            = config["references"][GENOME].get("cfDNAme_MARKERS", "")      # cfDNAme reference
+REF_IDS                = config["references"][GENOME].get("cfDNAme_REF_IDS", "")      # cfDNAme reference
+GOLD_MARKERS           = config["references"][GENOME].get("cfDNAme_GOLD_MARKERS", "") # cfDNAme reference
+HG38TOHG19             = config["references"][GENOME].get("UCSC_LIFTOVER", "")        # cfDNAme reference, need to convert hg38 to hg19
+atlas_bed              = config["references"][GENOME].get("UXM_ATLAS_BED", "")        # UXM references
+atlas_tsv              = config["references"][GENOME].get("UXM_ATLAS_REF", "")        # UXM references
+
+
+# Read in resource information,
+# containing information about 
+# threads, mem, walltimes, etc.
+with open(join(working_dir, 'config', 'cluster.json')) as fh:
+    cluster = json.load(fh)
+
+
+# Resolve conditional outputs
+# to add to rule all below
+def output_from_optional_modes(dmr_mode=False, dcv_mode=False):
+    # List to add conditional targets
+    outputs = []
+    if dmr_mode:
+        # TODO: Need to add back in new DMR scripts and update 
+        # the manhatten and mvp scripts to generate their figures
+        # Add differential methylation output files to list
+        pass 
+    if dcv_mode:
+        # Add cfDNA deconvolution output files to list
+        outputs.append(expand(join(working_dir, "CpG_CSV", "{samples}.csv"),samples=SAMPLES))
+        outputs.append(expand(join(working_dir, "deconvolution_CSV", "{samples}.csv"),samples=SAMPLES))
+        outputs.append(expand(join(working_dir, "deconvolution_CSV", "{samples}_deconv.log"),samples=SAMPLES))
+        outputs.append(join(working_dir, "deconvolution_CSV", "total.csv"))
+        outputs.append(join(working_dir, "deconvolution_CSV", "total_deconv_output.csv"))
+        outputs.append(join(working_dir, "deconvolution_CSV", "total_deconv_plot.png"))
+        outputs.append(expand(join(working_dir, "CpG", "{samples}", "{samples}.cfDNAmeInput.bedGraph"),samples=SAMPLES))
+        outputs.append(expand(join(working_dir, "CpG", "{samples}", "{samples}.cfDNAmeDeconvolution.tsv"),samples=SAMPLES))
+        outputs.append(expand(join(working_dir, "UXM", "{samples}.pat.gz"), samples=SAMPLES))
+        outputs.append(expand(join(working_dir, "UXM", "{samples}_deconv.250.csv"), samples=SAMPLES))
+    return outputs
+
+
+rule all:
+    input:
+      # Checking sequencing quality
+      expand(join(working_dir, "rawQC", "{samples}.{rn}_fastqc.html"), samples=SAMPLES, rn=RN),
+      # Adapter and quality trimming 
+      expand(join(working_dir, "trimGalore", "{samples}_val_1.fq.gz"), samples=SAMPLES),
+      expand(join(working_dir, "trimGalore", "{samples}_val_2.fq.gz"), samples=SAMPLES),
+      # kraken output, contamination screening
+      # expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.out.txt"),samples=SAMPLES),
+      # expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.taxa.txt"),samples=SAMPLES),
+      # expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.krona.html"),samples=SAMPLES),
+      # FQscreen output, contamination screening
+      # expand(join(working_dir, "FQscreen","{samples}_val_1_screen.txt"),samples=SAMPLES),
+      # expand(join(working_dir, "FQscreen","{samples}_val_1_screen.png"),samples=SAMPLES),
+      # expand(join(working_dir, "FQscreen","{samples}_val_2_screen.txt"),samples=SAMPLES),
+      # expand(join(working_dir, "FQscreen","{samples}_val_2_screen.png"),samples=SAMPLES),
+      # expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.txt"),samples=SAMPLES),
+      # expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.png"),samples=SAMPLES),
+      # expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.txt"),samples=SAMPLES),
+      # expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.png"), samples=SAMPLES),
+      # Bisulphite genome preparation, build new bismark reference genome
+      # join(working_dir, "refs", "Bisulfite_Genome", "CT_conversion", "genome_mfa.CT_conversion.fa"),
+      # join(working_dir, "refs", "Bisulfite_Genome", "GA_conversion", "genome_mfa.GA_conversion.fa"),
+      # Bismark align to prepared reference genomes
+      expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.bam"), samples=SAMPLES),
+      expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.flagstat"), samples=SAMPLES),
+      # Bismark deduplication
+      expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.cram"), samples=SAMPLES),
+      expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.flagstat"), samples=SAMPLES),
+      # Bismark extraction
+      expand(join(working_dir, "CpG", "{samples}", "{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"), samples=SAMPLES),
+      expand(join(working_dir, "CpG", "{samples}", "{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"), samples=SAMPLES),
+      join(working_dir, "bismark_summary_report.txt"),
+      join(working_dir, "bismark_summary_report.html"),
+      join(working_dir, "multiqc_report.html"),
+      # Conditionally run rules for DMR and DCV modes
+      output_from_optional_modes(dmr_mode=run_dmr_mode, dcv_mode=run_dcv_mode)
+
+
+# Import local rules
+include: join("rules", "methyl-seek.smk")                  # Main run mode rules 
+include: join("rules", "differential-methylation.smk")     # Conditional diff methylation rules
+include: join("rules", "deconvolution.smk")                # Conditional cfDNA deconvolution rules

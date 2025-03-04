@@ -1,0 +1,6 @@
+{
+    "tools": {
+        "WGBS_TOOLS": "/data/NHLBI_IDSS/references/UXM/wgbstools",
+        "UXM_DECONV": "/data/NHLBI_IDSS/references/UXM/uxm"
+    }
+}

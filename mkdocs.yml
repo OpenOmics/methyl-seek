@@ -2,7 +2,7 @@
 site_name: methyl-seek
 site_author: Skyler Kuhn
 site_description: >-
-  Bisulphite-sequencing methylation pipeline
+  An awesome OpenOmics methyl-seek pipeline
 
 # Repository
 repo_name: OpenOmics/methyl-seek
@@ -14,7 +14,7 @@ extra_css:
   - css/extra.css
 
 # Copyright
-copyright: Copyright &copy; 2022 OpenOmics
+copyright: Copyright &copy; 2023 OpenOmics
 
 # Configuration
 theme:
@@ -24,15 +24,15 @@ theme:
     - navigation.top
     - toc.integrate 
   palette:
-    # Palette toggle for light mode
+    # Palette toggle for light mode 
     - scheme: default
       toggle:
-        icon: material/brightness-7 
+        icon: material/lightbulb-on
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-night
         name: Switch to light mode
   logo: assets/icons/doc-book.svg
   favicon: assets/favicon/favicon.ico
@@ -48,7 +48,7 @@ plugins:
 extra:
   social:
     - icon: fontawesome/solid/users
-      link: https://ncbr.ncifcrf.gov/
+      link: https://idss-bioinformatics.nih.gov/
     - icon: fontawesome/brands/github
       link: https://github.com/OpenOmics
     - icon: fontawesome/brands/docker
@@ -58,6 +58,7 @@ extra:
 
 # Extensions
 markdown_extensions:
+  - markdown.extensions.md_in_html
   - markdown.extensions.admonition
   - markdown.extensions.attr_list
   - markdown.extensions.def_list
@@ -87,7 +88,8 @@ markdown_extensions:
   - pymdownx.snippets:
       check_paths: true
   - pymdownx.superfences
-  - pymdownx.tabbed
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
@@ -96,7 +98,10 @@ markdown_extensions:
 nav:
   - About: index.md
   - Commands: 
-    - methyl-seek: usage/run.md
+    - methyl-seek run: usage/run.md
+    - methyl-seek unlock: usage/unlock.md
+    - methyl-seek install: usage/install.md
+    - methyl-seek cache: usage/cache.md
   - FAQ:
     - General Questions: faq/questions.md
   - License: license.md

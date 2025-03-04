@@ -16,9 +16,9 @@ Welcome to methyl-seek's documentation! This guide is the main source of documen
 
 The **`./methyl-seek`** pipeline is composed of several interrelated pipelines to set up and run different types of analysis. Each of the available pipelines performs different functions:
 
- * [<code>methyl-seek <b>run</b></code>](https://openomics.github.io/methyl-seek/usage/run/): Identify CpG sites from whole genome or cell-free DNA bisulphite sequencing data.
- * [<code>methyl-seek <b>dmr</b></code>](https://openomics.github.io/methyl-seek/usage/run/): Determine differentially methylated regions populated with CpG sites.
- * [<code>methyl-seek <b>dcv</b></code>](https://openomics.github.io/methyl-seek/usage/run/): Identify cells/tissue of origin for cell-free DNA.
+ * [<code>methyl-seek <b>run</b></code>](https://openomics.github.io/methyl-seek/usage/run/): Run the genome-seek pipeline with your input files.
+ * [<code>methyl-seek <b>unlock</b></code>](https://openomics.github.io/methyl-seek/usage/unlock/): Unlocks a previous runs output directory.
+ * [<code>methyl-seek <b>cache</b></code>](https://openomics.github.io/methyl-seek/usage/cache/): Cache software containers locally.
 
 **methyl-seek** is a comprehensive bisulphite-sequencing-based DNA methylation pipeline. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
 

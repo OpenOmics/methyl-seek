@@ -1,142 +1,173 @@
-# <code>methyl-seek</code>
+# <code>methyl-seek <b>run</b></code>
 
-## 1. Overview
-The `methyl-seek` executable is composed of several inter-related pipelines intended to analyze human whole genome and cell-free DNA bisulphite-sequencing data to accurately locate CpG methylation sites, identify differentially methylated regions, and perform CpG deconvolution to determine cell/tissue of origin for cell-free DNA fragments. The expected input is paired-end Illumina FASTQ files, and output varies with the execution mode chosen.
+## 1. About 
+The `methyl-seek` executable is composed of several inter-related sub commands. Please see `methyl-seek -h` for all available options.
 
-#### Execution modes
+This part of the documentation describes options and concepts for <code>methyl-seek <b>run</b></code> sub command in more detail. With minimal configuration, the **`run`** sub command enables you to start running methyl-seek pipeline. 
 
-* [<code><b>run</b></code>](./run.md): Performs quality control and CpG methylation calling from whole genome or cell-free DNA bisulphite sequencing data.
-* [<code><b>dmr</b></code>](./dmr.md): Identifies differentially methylated regions (DMRs) populated with CpG sites between experimental groups.
-* [<code><b>dcv</b></code>](./deconvolution.md): Identifies cells/tissue of origin for the cell-free DNA fragments based on their CpG methylation profiles.
+Setting up the methyl-seek pipeline is fast and easy! In its most basic form, <code>methyl-seek <b>run</b></code> only has *two required inputs*.
 
-#### Programs
-
-- `FastQC` is used to assess the sequencing quality. `FastQC` is ran twice, before and after adapter trimming. It generates a set of basic statistics to identify problems that can arise during sequencing or library preparation. FastQC will summarize per base and per read QC metrics such as quality scores and GC content. It will also summarize the distribution of sequence lengths and will report the presence of adapter sequences.
-
-- `TrimGalor` is used to clip 10 bp ends from both 5' and 3' ends of each sequences, and eliminate any reads shorter than 50 bp length, and runs `FASTQC` on trimmed reads. `BBmerge` is used to get insert sizes of paired read sequences.
-
-- `Kraken2` and `FQScreen` are used to screen for various sources of contamination. During the process of sample collection to library preparation, there is a risk for introducing wanted sources of DNA. FastQ Screen compares your sequencing data to a set of different reference genomes to determine if there is contamination. It allows a user to see if the composition of your library matches what you expect. Also, if there are high levels of microbial contamination, Kraken can provide an estimation of the taxonomic composition. Kraken can be used in conjunction with Krona to produce interactive reports.
-
-- `Bismark` is used to map bisulfite treated sequencing reads to bisulphite marked reference genome of interest (default: human hg38 genome, hg38) and perform cytosine methylation calls in CpG, CHG and CHH context.
-
-- `MultiQC` is used to aggregate the results of all above mentioned tools into a single interactive report.
-
-- (dmr mode) `bsseq` (R package) is used to perform differential methylation calls using CpGs that exist in 25% of the population with coverage of at least 2. Differentially methylated CpGs are used to determine differentially methylated windows that are at least 300 bp long and contain 3 significant CpGs (with significance value of (p<0.05). Comb-P is used to merge adjacent differentially methylated windows (at most 6-bp apart) into differentially methylated regions (DMR).
-
-- (dcv mode) `meth_atlas` (array-based deconvolution) algorithm is used to compare the CpG methylation profiles with known methylation profiles of 25 tissues types (determined using methylation array) to deconvole the source of DNA.
-
-- (dcv mode) `UMX` (WGBS-based deconvolution) algorithm is used to compare the CpG methylation profiles with known methylation profiles of 32 tissues types (determined using whole genome bisulfite sequencing data) to deconvole the source of DNA.
-
-#### Flowchart
-**(_Add workflow flowchart here !!!)**
-
-
-## 2. Download repository
-
-Download methyl-seek repository from github: `https://github.com/OpenOmics/RNA-seek/archive/refs/heads/main.zip`
-
-```
-mkdir ~/project
-cd ~/project
-
-wget https://github.com/OpenOmics/methyl-seek/archive/refs/heads/main.zip
-unzip main.zip
-cd methyl-seek-main
+## 2. Synopsis
+```text
+$ methyl-seek run [--help] \
+      [--mode {slurm,local}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \
+      [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \ 
+      [--singularity-cache SINGULARITY_CACHE] \
+      [--dry-run] [--threads THREADS] \
+      --input INPUT [INPUT ...] \
+      --output OUTPUT
 ```
 
-## 3. Initial setup files
+The synopsis for each command shows its arguments and their usage. Optional arguments are shown in square brackets.
 
-#### FASTQ inputs
+A user **must** provide a list of FastQ (globbing is supported) to analyze via `--input` argument and an output directory to store results via `--output` argument.
 
-Pipeline accepts paired-end Illumina FASTQ files named as below: `{sample}.R1.fastq.gz` and `{sample}.R2.fastq.gz`
+Use you can always use the `-h` option for information on a specific command. 
 
-#### Sample groups
+### 2.1 Required arguments
 
-Sample group information is provided in `samples.txt`, which is a tab-delimited, two-column formatted with header labels as `samples` and `group`. First column includes `{sample}` names matching to those in FASTQ file names. Second column includes group labels corresponding to each sample (e.g.: `group1`, `group2` or `test`, `control`).
+Each of the following arguments are required. Failure to provide a required argument will result in a non-zero exit-code.
 
-| samples | group  |
-| ------- | ------ |
-| S1      | group1 |
-| S2      | group1 |
-| S3      | group2 |
-| S4      | group2 |
-| S5      | group3 |
-| S6      | group3 |
+  `--input INPUT [INPUT ...]`  
+> **Input FastQ or BAM file(s).**  
+> *type: file(s)*  
+> 
+> One or more FastQ files can be provided. The pipeline does NOT support single-end data. From the command-line, each input file should seperated by a space. Globbing is supported! This makes selecting FastQ files easy. Input FastQ files should always be gzipp-ed.
+> 
+> ***Example:*** `--input .tests/*.R?.fastq.gz`
 
-For DMR analyses, user should provide `group1` and `group2` labels, that should match with sample group information. This information will be used to create the `contrasts.txt` file, which is a tab-delimited, four-column formatted with header labels as `sample`, `group`,`comparisons`, and `path`. First column includes `{sample}` names matching to those in FASTQ file names. Second column includes group labels corresponding to each sample (e.g.: `group1`, `group2` or `test`, `control`). Third column includes group labels that are to be compared for DMR analyses. Fourth column includes path to CpG output files generated from bismark (run mode) in `~/project/methyl-seek-main/CpG/{Sample}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz`
+---  
+  `--output OUTPUT`
+> **Path to an output directory.**   
+> *type: path*
+>   
+> This location is where the pipeline will create all of its output files, also known as the pipeline's working directory. If the provided output directory does not exist, it will be created automatically.
+> 
+> ***Example:*** `--output /data/$USER/methyl-seek_out`
 
-Make sure should provide `group` and `comparison` labels match with labels in `samples.txt` file.
-Make sure `contrasts.txt` file is stored in main result directory(for e.g.: `~/project/methyl-seek-main/`)
+### 2.2 Analysis options
 
-```
-cat contrasts.txt
-```
+Each of the following arguments are optional, and do not need to be provided. 
 
-| samples | group  |   comparison   |                                         path                                     |
-| ------- | ------ | -------------- | ---------------------------------------------------------------------------------|
-| S1      | group1 | group1vsgroup2 | ~/project/methyl-seek-main/CpG/S1.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
-| S2      | group1 | group1vsgroup2 | ~/project/methyl-seek-main/CpG/S2.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
-| S3      | group2 | group1vsgroup2 | ~/project/methyl-seek-main/CpG/S2.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
-| S4      | group2 | group1vsgroup2 | ~/project/methyl-seek-main/CpG/S4.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
-| S5      | group3 | group1vsgroup3 | ~/project/methyl-seek-main/CpG/S5.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
-| S6      | group3 | group1vsgroup3 | ~/project/methyl-seek-main/CpG/S6.bismark_bt2_pe.deduplicated.CpG_report.txt.gz  |
+...add non-required analysis options 
 
-#### Config file
+### 2.3 Orchestration options
 
-Edit the `preconfig.yaml` file as below:
+Each of the following arguments are optional, and do not need to be provided. 
 
-- Set `rawdata_dir` to the absolute path of the directory containing all your fastqs.
-- Set `result_dir` to the absolute path of the working directory containing `methyl-seek` pipeline, where all result files will be stored.
-- Set `samples` to be the absolute path of your `samples.txt` located within `result_dir`.
+  `--dry-run`            
+> **Dry run the pipeline.**  
+> *type: boolean flag*
+> 
+> Displays what steps in the pipeline remain or will be run. Does not execute anything!
+>
+> ***Example:*** `--dry-run`
 
-For example,
+---  
+  `--silent`            
+> **Silence standard output.**  
+> *type: boolean flag*
+> 
+> Reduces the amount of information directed to standard output when submitting master job to the job scheduler. Only the job id of the master job is returned.
+>
+> ***Example:*** `--silent`
 
-```
-samples: "~/project/methyl-seek-main/samples.txt"
-rawdata_dir: "~/project/fastq/"
-result_dir: "~/project/methyl-seek-main/"
-```
-See below instructions for adding reference to `preconfig.yaml` file.
+---  
+  `--mode {slurm,local}`  
+> **Execution Method.**  
+> *type: string*  
+> *default: slurm*
+> 
+> Execution Method. Defines the mode or method of execution. Vaild mode options include: slurm or local. 
+> 
+> ***slurm***    
+> The slurm execution method will submit jobs to the [SLURM workload manager](https://slurm.schedmd.com/). It is recommended running methyl-seek in this mode as execution will be significantly faster in a distributed environment. This is the default mode of execution.
+>
+> ***local***  
+> Local executions will run serially on compute instance. This is useful for testing, debugging, or when a users does not have access to a high performance computing environment. If this option is not provided, it will default to a local execution mode. 
+> 
+> ***Example:*** `--mode slurm`
 
-## 4. Custom reference
+---  
+  `--job-name JOB_NAME`  
+> **Set the name of the pipeline's master job.**  
+> *type: string*
+> *default: pl:methyl-seek*
+> 
+> When submitting the pipeline to a job scheduler, like SLURM, this option always you to set the name of the pipeline's master job. By default, the name of the pipeline's master job is set to "pl:methyl-seek".
+> 
+> ***Example:*** `--job-name pl_id-42`
 
-By default, bisulphite marked human hg38 reference genome is provide with this repo. To create a custom bisulphite marked reference for different genome of interest, simply provide genome fasta file (for e.g.`hg19.genome.fa`), and update the information in `preconfig.yaml` as below:
+---  
+  `--singularity-cache SINGULARITY_CACHE`  
+> **Overrides the $SINGULARITY_CACHEDIR environment variable.**  
+> *type: path*  
+> *default: `--output OUTPUT/.singularity`*
+>
+> Singularity will cache image layers pulled from remote registries. This ultimately speeds up the process of pull an image from DockerHub if an image layer already exists in the singularity cache directory. By default, the cache is set to the value provided to the `--output` argument. Please note that this cache cannot be shared across users. Singularity strictly enforces you own the cache directory and will return a non-zero exit code if you do not own the cache directory! See the `--sif-cache` option to create a shareable resource. 
+> 
+> ***Example:*** `--singularity-cache /data/$USER/.singularity`
 
-```
-bisulphite_ref: "~/project/bisulphite_genome"
-bisulphite_fa: "~/project/bisulphite_genome/hg19.genome.fa"
-species: "hg19"
-```
+---  
+  `--sif-cache SIF_CACHE`
+> **Path where a local cache of SIFs are stored.**  
+> *type: path*  
+>
+> Uses a local cache of SIFs on the filesystem. This SIF cache can be shared across users if permissions are set correctly. If a SIF does not exist in the SIF cache, the image will be pulled from Dockerhub and a warning message will be displayed. The `methyl-seek cache` subcommand can be used to create a local SIF cache. Please see `methyl-seek cache` for more information. This command is extremely useful for avoiding DockerHub pull rate limits. It also remove any potential errors that could occur due to network issues or DockerHub being temporarily unavailable. We recommend running methyl-seek with this option when ever possible.
+> 
+> ***Example:*** `--singularity-cache /data/$USER/SIFs`
 
-## 5. Execution
+---  
+  `--threads THREADS`   
+> **Max number of threads for each process.**  
+> *type: int*  
+> *default: 2*
+> 
+> Max number of threads for each process. This option is more applicable when running the pipeline with `--mode local`.  It is recommended setting this vaule to the maximum number of CPUs available on the host machine.
+> 
+> ***Example:*** `--threads 12`
 
-Still in progress.. how to use execution modes?
-```bash
-# Step 1.) Dry-run the pipeline
-sinteractive -N 1 -n 1 --time=1:00:00 --mem=8gb  --cpus-per-task=2 --pty bash
+
+---  
+  `--tmp-dir TMP_DIR`   
+> **Max number of threads for each process.**  
+> *type: path*  
+> *default: `/lscratch/$SLURM_JOBID`*
+> 
+> Path on the file system for writing temporary output files. By default, the temporary directory is set to '/lscratch/$SLURM_JOBID' for backwards compatibility with the NIH's Biowulf cluster; however, if you are running the pipeline on another cluster, this option will need to be specified. Ideally, this path should point to a dedicated location on the filesystem for writing tmp files. On many systems, this location is set to somewhere in /scratch. If you need to inject a variable into this string that should NOT be expanded, please quote this options value in single quotes.
+> 
+> ***Example:*** `--tmp-dir /scratch/$USER/`
+
+### 2.4 Miscellaneous options  
+Each of the following arguments are optional, and do not need to be provided. 
+
+  `-h, --help`            
+> **Display Help.**  
+> *type: boolean flag*
+> 
+> Shows command's synopsis, help message, and an example command
+> 
+> ***Example:*** `--help`
+
+## 3. Example
+```bash 
+# Step 1.) Grab an interactive node,
+# do not run on head node!
+srun -N 1 -n 1 --time=1:00:00 --mem=8gb  --cpus-per-task=2 --pty bash
 module purge
 module load singularity snakemake
 
-## run : generate CpG reports
-sbatch ~/project/methyl-seek-main/pipeline_launch.sh run npr ~/project/methyl-seek-main/
+# Step 2A.) Dry-run the pipeline
+./methyl-seek run --input .tests/*.R?.fastq.gz \
+                  --output /data/$USER/output \
+                  --mode slurm \
+                  --dry-run
 
-## dcv : perform CpG deconvolution
-sbatch ~/project/methyl-seek-main/pipeline_launch.sh dcv npr ~/project/methyl-seek-main/
-
-## dmr : perform CpG deconvolution
-sbatch ~/project/methyl-seek-main/pipeline_launch.sh dmr npr ~/project/methyl-seek-main/ group1 group2
-
-# Step 2.) To launch pipeline
-module purge
-module load singularity snakemake
-
-## run : generate CpG reports
-sbatch ~/project/methyl-seek-main/pipeline_submit.sh run process ~/project/methyl-seek-main/
-
-## dcv : perform CpG deconvolution
-sbatch ~/project/methyl-seek-main/pipeline_submit.sh dcv process ~/project/methyl-seek-main/
-
-## dmr : perform CpG deconvolution
-sbatch ~/project/methyl-seek-main/pipeline_submit.sh dmr process ~/project/methyl-seek-main/ group1 group2
-
+# Step 2B.) Run the methyl-seek pipeline
+# The slurm mode will submit jobs to 
+# the cluster. It is recommended running 
+# the pipeline in this mode.
+./methyl-seek run --input .tests/*.R?.fastq.gz \
+                  --output /data/$USER/output \
+                  --mode slurm
 ```
