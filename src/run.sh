@@ -213,8 +213,8 @@ function submit(){
     cat << EOF > kickoff.sh
 #!/usr/bin/env bash
 #SBATCH --cpus-per-task=16 
-#SBATCH --mem=96g
-#SBATCH --time=5-00:00:00
+#SBATCH --mem=64g
+#SBATCH --time=10-00:00:00
 #SBATCH --parsable
 #SBATCH -J "$2"
 #SBATCH --mail-type=BEGIN,END,FAIL
