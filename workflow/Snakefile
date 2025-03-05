@@ -30,7 +30,9 @@ run_dcv_mode   = str_bool(
 run_dmr_mode   = str_bool(                                                           
   config['options']['differential_methylation_analysis']                             # Run differential methylation rules
 )                                                                                    # Default: False, also needs groups and contrasts file
-
+# Build Bismark references if custom
+# genomic FASTA file was provided
+build_bismark_ref = False                                                            # TODO: Update --genome option to accept genomic FASTA                   
 
 # Standard set of required references files
 genome_fa              = config["references"][GENOME]["GENOME_FASTA"]                 # Genomic FASTA file
@@ -82,44 +84,46 @@ def output_from_optional_modes(dmr_mode=False, dcv_mode=False):
 
 rule all:
     input:
-      # Checking sequencing quality
-      expand(join(working_dir, "rawQC", "{samples}.{rn}_fastqc.html"), samples=SAMPLES, rn=RN),
-      # Adapter and quality trimming 
-      expand(join(working_dir, "trimGalore", "{samples}_val_1.fq.gz"), samples=SAMPLES),
-      expand(join(working_dir, "trimGalore", "{samples}_val_2.fq.gz"), samples=SAMPLES),
-      # kraken output, contamination screening
-      # expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.out.txt"),samples=SAMPLES),
-      # expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.taxa.txt"),samples=SAMPLES),
-      # expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.krona.html"),samples=SAMPLES),
-      # FQscreen output, contamination screening
-      # expand(join(working_dir, "FQscreen","{samples}_val_1_screen.txt"),samples=SAMPLES),
-      # expand(join(working_dir, "FQscreen","{samples}_val_1_screen.png"),samples=SAMPLES),
-      # expand(join(working_dir, "FQscreen","{samples}_val_2_screen.txt"),samples=SAMPLES),
-      # expand(join(working_dir, "FQscreen","{samples}_val_2_screen.png"),samples=SAMPLES),
-      # expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.txt"),samples=SAMPLES),
-      # expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.png"),samples=SAMPLES),
-      # expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.txt"),samples=SAMPLES),
-      # expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.png"), samples=SAMPLES),
-      # Bisulphite genome preparation, build new bismark reference genome
-      # join(working_dir, "refs", "Bisulfite_Genome", "CT_conversion", "genome_mfa.CT_conversion.fa"),
-      # join(working_dir, "refs", "Bisulfite_Genome", "GA_conversion", "genome_mfa.GA_conversion.fa"),
-      # Bismark align to prepared reference genomes
-      expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.bam"), samples=SAMPLES),
-      expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.flagstat"), samples=SAMPLES),
-      # Bismark deduplication
-      expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.cram"), samples=SAMPLES),
-      expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.flagstat"), samples=SAMPLES),
-      # Bismark extraction
-      expand(join(working_dir, "CpG", "{samples}", "{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"), samples=SAMPLES),
-      expand(join(working_dir, "CpG", "{samples}", "{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"), samples=SAMPLES),
-      join(working_dir, "bismark_summary_report.txt"),
-      join(working_dir, "bismark_summary_report.html"),
-      join(working_dir, "multiqc_report.html"),
-      # Conditionally run rules for DMR and DCV modes
-      output_from_optional_modes(dmr_mode=run_dmr_mode, dcv_mode=run_dcv_mode),
+        # Checking sequencing quality
+        expand(join(working_dir, "rawQC", "{samples}.{rn}_fastqc.html"), samples=SAMPLES, rn=RN),
+        # Adapter and quality trimming 
+        expand(join(working_dir, "trimGalore", "{samples}_val_1.fq.gz"), samples=SAMPLES),
+        expand(join(working_dir, "trimGalore", "{samples}_val_2.fq.gz"), samples=SAMPLES),
+        # kraken output, contamination screening
+        # expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.out.txt"),samples=SAMPLES),
+        # expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.taxa.txt"),samples=SAMPLES),
+        # expand(join(working_dir, "kraken","{samples}.trim.kraken_bacteria.krona.html"),samples=SAMPLES),
+        # FQscreen output, contamination screening
+        # expand(join(working_dir, "FQscreen","{samples}_val_1_screen.txt"),samples=SAMPLES),
+        # expand(join(working_dir, "FQscreen","{samples}_val_1_screen.png"),samples=SAMPLES),
+        # expand(join(working_dir, "FQscreen","{samples}_val_2_screen.txt"),samples=SAMPLES),
+        # expand(join(working_dir, "FQscreen","{samples}_val_2_screen.png"),samples=SAMPLES),
+        # expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.txt"),samples=SAMPLES),
+        # expand(join(working_dir, "FQscreen2","{samples}_val_1_screen.png"),samples=SAMPLES),
+        # expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.txt"),samples=SAMPLES),
+        # expand(join(working_dir, "FQscreen2","{samples}_val_2_screen.png"), samples=SAMPLES),
+        # Bisulphite genome preparation, build new bismark reference genome
+        provided([join(working_dir, "refs", "Bismark", "genome.fa")], build_bismark_ref),
+        provided([join(working_dir, "refs", "Bismark", "Bisulfite_Genome", "CT_conversion", "genome_mfa.CT_conversion.fa")], build_bismark_ref),
+        provided([join(working_dir, "refs", "Bismark", "Bisulfite_Genome", "GA_conversion", "genome_mfa.GA_conversion.fa")], build_bismark_ref),
+        # Bismark align to prepared reference genomes
+        expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.bam"), samples=SAMPLES),
+        expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.flagstat"), samples=SAMPLES),
+        # Bismark deduplication
+        expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.cram"), samples=SAMPLES),
+        expand(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.flagstat"), samples=SAMPLES),
+        # Bismark extraction
+        expand(join(working_dir, "CpG", "{samples}", "{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"), samples=SAMPLES),
+        expand(join(working_dir, "CpG", "{samples}", "{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"), samples=SAMPLES),
+        join(working_dir, "bismark_summary_report.txt"),
+        join(working_dir, "bismark_summary_report.html"),
+        join(working_dir, "multiqc_report.html"),
+        # Conditionally run rules for DMR and DCV modes
+        output_from_optional_modes(dmr_mode=run_dmr_mode, dcv_mode=run_dcv_mode),
 
 
 # Import local rules
 include: join("rules", "methyl-seek.smk")                  # Main run mode rules 
 include: join("rules", "differential-methylation.smk")     # Conditional diff methylation rules
 include: join("rules", "deconvolution.smk")                # Conditional cfDNA deconvolution rules
+include: join("rules", "hooks.smk")                        # Post-processing hooks to get job information

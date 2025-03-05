@@ -237,14 +237,14 @@ rule prep_bisulphite_genome:
         C to T converted genomic FASTA file,
         G to A converted genomic FASTA file
     """
-    input:
-      bisulphite_fa
     output:
-      join(working_dir, "refs", "Bisulfite_Genome", "CT_conversion", "genome_mfa.CT_conversion.fa"),
-      join(working_dir, "refs", "Bisulfite_Genome", "GA_conversion", "genome_mfa.GA_conversion.fa"),
+      fasta  = join(working_dir, "refs", "Bismark", "genome.fa"),
+      CT_ref = join(working_dir, "refs", "Bismark", "Bisulfite_Genome", "CT_conversion", "genome_mfa.CT_conversion.fa"),
+      GA_ref = join(working_dir, "refs", "Bismark", "Bisulfite_Genome", "GA_conversion", "genome_mfa.GA_conversion.fa"),
     params:
       rname   = "prep_bisulphite_genome",
-      outdir  = join(working_dir, "refs"),
+      outdir  = join(working_dir, "refs", "Bismark"),
+      fasta   = bisulphite_fa,
     resources:
       mem       = allocated("mem",       "prep_bisulphite_genome", cluster),
       gres      = allocated("gres",      "prep_bisulphite_genome", cluster),
@@ -256,7 +256,12 @@ rule prep_bisulphite_genome:
       """
       module load bismark/0.23.0
       cd {params.outdir}
-      # Build custom reference genome for Bismark 
+      # Symlink genomic FASTA Bismark folder,
+      # bismark looks for the genomic FASTA
+      # in this location, must end with .fa
+      # or .fasta file extension
+      ln -sf {params.fasta} {params.outdir}/genome.fa
+      # Build custom reference genome for Bismark
       bismark_genome_preparation \\
         --verbose \\
         --parallel {threads} \\
@@ -283,7 +288,6 @@ rule bismark_align:
     input:
       F1 = join(working_dir, "trimGalore", "{samples}_val_1.fq.gz"),
       F2 = join(working_dir, "trimGalore", "{samples}_val_2.fq.gz"),
-      bismark_ref = bisulphite_genome_path
     output:
       B1  = join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.bam"),
       B2  = join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.flagstat"),
@@ -293,6 +297,7 @@ rule bismark_align:
       FQ4 = temp(join(working_dir, "bismarkAlign", "{samples}_val_2.fq.gz_ambiguous_reads_2.fq.gz")),
     params:
       rname   = "bismark_align",
+      bismark_ref = bisulphite_genome_path,
       outdir  = join(working_dir, "bismarkAlign"),
       outbam  = join(working_dir, "bismarkAlign", "{samples}_val_1_bismark_bt2_pe.bam"),
       R1      = join(working_dir, "bismarkAlign", "{samples}_val_1_bismark_bt2_PE_report.txt"),
@@ -312,7 +317,7 @@ rule bismark_align:
         --temp_dir /lscratch/$SLURM_JOBID/ \\
         --bowtie2 -N 1 --bam -L 22 --X 1000 --un --ambiguous -p 4 --score_min L,-0.6,-0.6 \\
         --output_dir {params.outdir} \\
-        --genome {input.bismark_ref} \\
+        --genome {params.bismark_ref} \\
         -1 {input.F1} \\
         -2 {input.F2}
       mv {params.outbam} {output.B1}
