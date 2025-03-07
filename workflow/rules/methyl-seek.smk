@@ -407,7 +407,7 @@ rule bismark_extract:
         rname  = 'bismark_extract',
         outdir = join(working_dir, "CpG", "{samples}"),
         genome = bisulphite_fa,
-        bismark_index = join(bisulphite_genome_path,species),
+        bismark_index = bisulphite_genome_path,
     resources:
         # Scaling memory and partion allocation
         # based on the number of retries
