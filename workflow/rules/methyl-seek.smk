@@ -460,10 +460,10 @@ rule multiqc:
         join(working_dir, "bismark_summary_report.html"),
         join(working_dir, "multiqc_report.html"),
     params:
-        rname="multiqc",
-        outdir=working_dir,
-        bis_dir=directory(join(working_dir,"bismarkAlign")),
-        script_dir=join(working_dir,"scripts"),
+        rname      = "multiqc",
+        outdir     = working_dir,
+        bis_dir    = directory(join(working_dir,"bismarkAlign")),
+        script_dir = join(working_dir, "workflow", "scripts"),
     resources:
         mem       = allocated("mem",       "multiqc", cluster),
         gres      = allocated("gres",      "multiqc", cluster),

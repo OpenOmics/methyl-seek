@@ -21,7 +21,7 @@ rule get_CpG:
     params:
         rname      = "get_CpG",
         cutoff     = 5,
-        script_dir = join(working_dir, "scripts"),
+        script_dir = join(working_dir, "workflow", "scripts"),
         dir1       = join(working_dir, "CpG_CSV"),
         dir2       = join(working_dir, "deconvolution_CSV"),
     resources:
@@ -76,7 +76,7 @@ rule run_deconv:
     output:
         join(working_dir, "deconvolution_CSV", "{samples}_deconv.log"),
     params:
-        script_dir = join(working_dir, "scripts"),
+        script_dir = join(working_dir, "workflow", "scripts"),
         outdir     = join(working_dir, "deconvolution_CSV"),
         rname      = "run_deconv",
         ref        = REF_ATLAS,
@@ -130,7 +130,7 @@ rule run_deconv_merged:
         rname      = "run_deconv_merged",
         ref        = REF_ATLAS,
         outdir     = join(working_dir, "deconvolution_CSV"),
-        script_dir = join(working_dir, "scripts"),
+        script_dir = join(working_dir, "workflow", "scripts"),
     resources:
         mem       = allocated("mem",       "run_deconv_merged", cluster),
         gres      = allocated("gres",      "run_deconv_merged", cluster),
@@ -228,7 +228,7 @@ rule aggregate_over_regions:
         tsv  = join(working_dir, "CpG", "{samples}", "{samples}.cfDNAmeInput.bedGraph"),
     params:
         rname      = "format4",
-        script_dir = join(working_dir, "scripts"),
+        script_dir = join(working_dir, "workflow", "scripts"),
     resources:
         mem       = allocated("mem",       "aggregate_over_regions", cluster),
         gres      = allocated("gres",      "aggregate_over_regions", cluster),
@@ -252,7 +252,7 @@ rule cfDNAme:
         tsv = join(working_dir, "CpG", "{samples}", "{samples}.cfDNAmeDeconvolution.tsv"),
     params:
         rname      = "cfDNAme",
-        script_dir = join(working_dir, "scripts"),
+        script_dir = join(working_dir, "workflow", "scripts"),
         sampleName = "{samples}",
         reference_markers = REF_MARKERS,
         reference_IDs     = REF_IDS,
@@ -321,7 +321,7 @@ rule wgbstools:
         # TODO: remove hardcoded reference, exe path, species, and threads
         ref        = species,
         outdir     = join(working_dir, "UXM"),
-        script_dir = join(working_dir, "scripts"),
+        script_dir = join(working_dir, "workflow", "scripts"),
     resources:
         mem       = allocated("mem",       "wgbstools", cluster),
         gres      = allocated("gres",      "wgbstools", cluster),
@@ -335,7 +335,7 @@ rule wgbstools:
         module load samtools bedtools bamtools
         /data/NHLBI_IDSS/references/UXM/wgbstools bam2pat \\
             --genome hg38 \\
-            -L /data/NHLBI_IDSS/references/UXM/supplemental/Atlas.U25.l4.hg38.full.bed \\
+            -L /data/NHLBI_IDSS/references/UXM/supplemental/Atlas.U250.l4.hg38.full.bed \\
             --out_dir {params.outdir} \\
             -@ 12 {input.bam}
         """
