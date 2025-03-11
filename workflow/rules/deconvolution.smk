@@ -125,7 +125,6 @@ rule run_deconv_merged:
         join(working_dir, "deconvolution_CSV", "total.csv"),
     output:
         join(working_dir, "deconvolution_CSV", "total_deconv_output.csv"),
-        join(working_dir, "deconvolution_CSV", "total_deconv_plot.png"),
     params:
         rname      = "run_deconv_merged",
         ref        = REF_ATLAS,
@@ -287,8 +286,7 @@ rule bamsort:
         bai = temp(join(working_dir, "bismarkAlign", "bams", "{samples}.bam.bai")),
     params:
         rname     = "bamsort",
-        # TODO: remove hardcode reference and threads
-        reference = "/data/NHLBI_IDSS/references/Bismark_Genomes/hg38/genome.fa",
+        reference = bisulphite_fa,
     resources:
         mem       = allocated("mem",       "bamsort", cluster),
         gres      = allocated("gres",      "bamsort", cluster),
@@ -300,12 +298,12 @@ rule bamsort:
         """
         module load samtools
         samtools sort \\
-            -@ 12 \\
-            --reference /data/NHLBI_IDSS/references/Bismark_Genomes/hg38/genome.fa \\
+            -@ {threads} \\
+            --reference {params.reference} \\
             {input.bam} \\
         > {output.bam}
         samtools index \\
-            -@ 12 \\
+            -@ {threads} \\
             {output.bam}
         """
 
@@ -318,10 +316,11 @@ rule wgbstools:
         pat = join(working_dir, "UXM", "{samples}.pat.gz"),
     params:
         rname      = "wgbstools",
-        # TODO: remove hardcoded reference, exe path, species, and threads
         ref        = species,
         outdir     = join(working_dir, "UXM"),
         script_dir = join(working_dir, "workflow", "scripts"),
+        atlas_bed  = config["references"][species].get("UXM_ATLAS_BED", "__no_ref_available"),
+        tool_path  = str(os.path.dirname(config["tools"]["WGBS_TOOLS"])),
     resources:
         mem       = allocated("mem",       "wgbstools", cluster),
         gres      = allocated("gres",      "wgbstools", cluster),
@@ -333,11 +332,13 @@ rule wgbstools:
         """
         mkdir -p {params.outdir}
         module load samtools bedtools bamtools
-        /data/NHLBI_IDSS/references/UXM/wgbstools bam2pat \\
-            --genome hg38 \\
-            -L /data/NHLBI_IDSS/references/UXM/supplemental/Atlas.U250.l4.hg38.full.bed \\
+        # Add PATH to wgbstools and UXM
+        export PATH=$PATH:{params.tool_path}
+        wgbstools bam2pat \\
+            --genome {params.ref} \\
+            -L {params.atlas_bed} \\
             --out_dir {params.outdir} \\
-            -@ 12 {input.bam}
+            -@ {threads} {input.bam}
         """
 
 
@@ -348,8 +349,11 @@ rule UXM:
         pat = join(working_dir, "UXM", "{samples}_deconv.250.csv"),
     params:
         rname = "UXM",
-        # TODO: remove hardcoded reference and exe path
-        atlas = "/data/NHLBI_IDSS/references/UXM/supplemental/Atlas.U250.l4.hg38.full.tsv",
+        atlas_ref  = config["references"][species].get("UXM_ATLAS_REF", "__no_ref_available"),
+        # UXM tools needs wbstools in the PATH,
+        # assumption being made here is that 
+        # both tools are in the same directory
+        tool_path  = str(os.path.dirname(config["tools"]["UXM_DECONV"])),
     resources:
         mem       = allocated("mem",       "UXM", cluster),
         gres      = allocated("gres",      "UXM", cluster),
@@ -360,9 +364,11 @@ rule UXM:
     shell:
         """
         module load samtools bedtools bamtools
-        /data/NHLBI_IDSS/references/UXM/uxm deconv \\
+        # Add PATH to wgbstools and UXM
+        export PATH=$PATH:{params.tool_path}
+        uxm deconv \\
             {input.pat} \\
             -o {output.pat} \\
-            --atlas {params.atlas} \\
+            --atlas {params.atlas_ref} \\
             --ignore Colon-Fibro Dermal-Fibro Gallbladder Bone-Osteob
         """

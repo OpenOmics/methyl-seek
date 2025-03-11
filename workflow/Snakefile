@@ -74,7 +74,6 @@ def output_from_optional_modes(dmr_mode=False, dcv_mode=False):
         outputs.append(expand(join(working_dir, "deconvolution_CSV", "{samples}_deconv.log"),samples=SAMPLES))
         outputs.append(join(working_dir, "deconvolution_CSV", "total.csv"))
         outputs.append(join(working_dir, "deconvolution_CSV", "total_deconv_output.csv"))
-        outputs.append(join(working_dir, "deconvolution_CSV", "total_deconv_plot.png"))
         outputs.append(expand(join(working_dir, "CpG", "{samples}", "{samples}.cfDNAmeInput.bedGraph"),samples=SAMPLES))
         outputs.append(expand(join(working_dir, "CpG", "{samples}", "{samples}.cfDNAmeDeconvolution.tsv"),samples=SAMPLES))
         outputs.append(expand(join(working_dir, "UXM", "{samples}.pat.gz"), samples=SAMPLES))

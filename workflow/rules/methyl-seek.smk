@@ -343,7 +343,7 @@ rule bismark_dedup:
         F1 = join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.bam"),
     output:
         T1 = temp(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.temp.bam")),
-        B1 = temp(join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.bam")),
+        B1 = join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.bam"),
         B2 = join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.flagstat"),
         C1 = join(working_dir, "bismarkAlign", "{samples}.bismark_bt2_pe.deduplicated.cram"),
     params:
