@@ -265,7 +265,7 @@ rule cfDNAme:
     shell:
         """
         module load R
-        Rscript ${params.script_dir}/tissues_of_origin_v2.R \\
+        Rscript {params.script_dir}/tissues_of_origin_v2.R \\
             {input.bed}  \\
             {params.reference_markers} \\
             {output.tsv} \\
