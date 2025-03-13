@@ -255,6 +255,7 @@ rule cfDNAme:
         sampleName = "{samples}",
         reference_markers = REF_MARKERS,
         reference_IDs     = REF_IDS,
+        r_libs_ext        = config["tools"]["R_LIBS_EXTERNAL"],
     resources:
         mem       = allocated("mem",       "cfDNAme", cluster),
         gres      = allocated("gres",      "cfDNAme", cluster),
@@ -264,7 +265,10 @@ rule cfDNAme:
         int(allocated("threads", "cfDNAme", cluster)),
     shell:
         """
-        module load R
+        module load R/4.4.3
+        # Set R_LIBS_USER to load external R libraries
+        # not part of the system installation
+        export R_LIBS_USER="{params.r_libs_ext}"
         Rscript {params.script_dir}/tissues_of_origin_v2.R \\
             {input.bed}  \\
             {params.reference_markers} \\
