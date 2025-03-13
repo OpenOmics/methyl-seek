@@ -354,6 +354,7 @@ rule UXM:
         # assumption being made here is that 
         # both tools are in the same directory
         tool_path  = str(os.path.dirname(config["tools"]["UXM_DECONV"])),
+        tmpdir    = tmp_dir,
     resources:
         mem       = allocated("mem",       "UXM", cluster),
         gres      = allocated("gres",      "UXM", cluster),
@@ -363,6 +364,13 @@ rule UXM:
         int(allocated("threads", "UXM", cluster)),
     shell:
         """
+        # Setups temporary directory for
+        # intermediate files with built-in 
+        # mechanism for deletion on exit
+        if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+        tmp=$(mktemp -d -p "{params.tmpdir}")
+        trap 'rm -rf "${{tmp}}"' EXIT
+
         module load samtools bedtools bamtools
         # Add PATH to wgbstools and UXM
         export PATH=$PATH:{params.tool_path}
@@ -370,5 +378,6 @@ rule UXM:
             {input.pat} \\
             -o {output.pat} \\
             --atlas {params.atlas_ref} \\
+            --tmp_dir ${{tmp}} \\
             --ignore Colon-Fibro Dermal-Fibro Gallbladder Bone-Osteob
         """

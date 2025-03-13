@@ -13,6 +13,7 @@ from scripts.common import (
 
 
 # Global workflow variables
+tmp_dir        = config["options"]["tmp_dir"]                                        # Temporary directory of pipeline, i.e. /lscratch/$SLURM_JOB_ID
 GENOME         = config["options"]["genome"]                                         # Reference genome, i.e. hg38, hg19, mm10 
 working_dir    = config["options"]["output"]                                         # Output directory or the working directory
 dmr_dir        = join(working_dir, "dmr")                                            # Base output directory for diff methylation analyses
