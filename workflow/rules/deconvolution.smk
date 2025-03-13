@@ -278,7 +278,7 @@ rule cfDNAme:
             TRUE \\
             FALSE \\
             TRUE \\
-            colon_5/hsc_5/hsc_2/spleen_1/spleen_2/spleen_3/spleen_4/
+            colon_5/hsc_5/hsc_2/spleen_1/spleen_2/spleen_3/spleen_4
         """
 
 
