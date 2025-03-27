@@ -2,16 +2,10 @@
 
   <h1 style="font-size: 250%">methyl-seek 🔬</h1>
 
-  <b><i>Bisulphite-sequencing Methylation Pipeline</i></b><br> 
-  <a href="https://doi.org/10.5281/zenodo.8387343">
-      <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.8387343.svg" alt="DOI">
+  <b><i>long pipeline name</i></b><br> 
+  <a href="https://github.com/OpenOmics/methyl-seek/actions/workflows/main.yaml">
+    <img alt="tests" src="https://github.com/OpenOmics/methyl-seek/workflows/tests/badge.svg">
   </a>
-  <a href="https://github.com/OpenOmics/methyl-seek/releases">
-    <img alt="GitHub release" src="https://img.shields.io/github/v/release/OpenOmics/methyl-seek?color=blue&include_prereleases">
-  </a>
-  <a href="https://hub.docker.com/repository/docker/skchronicles/trimgalore">
-    <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/skchronicles/trimgalore">
-  </a><br>
   <a href="https://github.com/OpenOmics/methyl-seek/actions/workflows/docs.yml">
     <img alt="docs" src="https://github.com/OpenOmics/methyl-seek/workflows/docs/badge.svg">
   </a>
@@ -30,13 +24,40 @@
 
 
 ## Overview
-Welcome to methyl-seek's documentation! This guide is the main source of documentation for users who are getting started with the [methlyation pipeline](https://openomics.github.io/methyl-seek/).
 
-The **`./methyl-seek`** pipeline is composed of several interrelated pipelines to set up and run different types of analysis. Each of the available pipelines performs different functions:
+Welcome to methyl-seek's documentation! This guide is the main source of documentation for users that are getting started with the [methylation pipeline](https://github.com/OpenOmics/methyl-seek/). 
 
- * [<code>methyl-seek <b>run</b></code>](usage/run.md): Identify CpG sites from whole genome or cell-free DNA bisulphite sequencing data.
- * [<code>methyl-seek <b>dmr</b></code>](usage/dmr.md): Determine differentially methylated regions populated with CpG sites.
- * [<code>methyl-seek <b>dcv</b></code>](usage/deconvolution.md): Identify cells/tissue of origin for cell-free DNA.
+The **`./methyl-seek`** pipeline is composed several inter-related sub commands to setup and run the pipeline across different systems. Each of the available sub commands perform different functions: 
+
+<section align="center" markdown="1" style="display: flex; flex-wrap: row wrap; justify-content: space-around;">
+
+!!! inline custom-grid-button ""
+
+    [<code style="font-size: 1em;">methyl-seek <b>run</b></code>](usage/run.md)   
+    Run the methyl-seek pipeline with your input files.
+
+!!! inline custom-grid-button ""
+
+    [<code style="font-size: 1em;">methyl-seek <b>unlock</b></code>](usage/unlock.md)  
+    Unlocks a previous runs output directory.
+
+</section>
+
+<section align="center" markdown="1" style="display: flex; flex-wrap: row wrap; justify-content: space-around;">
+
+
+!!! inline custom-grid-button ""
+
+    [<code style="font-size: 1em;">methyl-seek <b>install</b></code>](usage/install.md)  
+    Download remote reference files locally.
+
+
+!!! inline custom-grid-button ""
+
+    [<code style="font-size: 1em;">methyl-seek <b>cache</b></code>](usage/cache.md)  
+    Cache remote software containers locally.  
+
+</section>
 
 **methyl-seek** is a comprehensive bisulphite-sequencing-based DNA methylation pipeline. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
 
@@ -47,11 +68,13 @@ Before getting started, we highly recommend reading through the [usage](usage/ru
 For more information about issues or troubleshooting a problem, please check out our [FAQ](faq/questions.md) prior to [opening an issue on Github](https://github.com/OpenOmics/methyl-seek/issues).
 
 ## Dependencies
-**Requires:** `singularity>=3.5`  `snakemake>=6.0`
+
+**Requires:** `singularity>=3.5`  `snakemake<8.0`
 
 At the current moment, the pipeline uses a mixture of environment modules and docker images; however, this will be changing soon! In the very near future, the pipeline will only use docker images. With that being said, [snakemake](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html) and [singularity](https://singularity.lbl.gov/all-releases) must be installed on the target system. Snakemake orchestrates the execution of each step in the pipeline. To guarantee the highest level of reproducibility, each step of the pipeline will rely on versioned images from [DockerHub](https://hub.docker.com/u/skchronicles). Snakemake uses singularity to pull these images onto the local filesystem prior to job execution, and as so, snakemake and singularity will be the only two dependencies in the future.
 
 ## Installation
+
 Please clone this repository to your local filesystem using the following command:
 ```bash
 # Clone Repository from Github
@@ -66,9 +89,11 @@ module load snakemake singularity
 ```
 
 ## Contribute
+
 This site is a living document, created for and by members like you. **methyl-seek** is maintained by the members of OpenOmics and is improved by continuous feedback! We encourage you to contribute new content and make improvements to existing content via pull request to our [GitHub repository :octicons-heart-fill-24:{ .heart }](https://github.com/OpenOmics/methyl-seek).
 
 ## Citation
+
 If you use this software, please cite it as below:  
 
 === "BibTex"
@@ -92,10 +117,11 @@ If you use this software, please cite it as below:
     Neelam Redekar, Tom Hill, & Skyler Kuhn. (2023). OpenOmics/methyl-seek: v1.0.0 (v1.0.0). Zenodo. https://doi.org/10.5281/zenodo.8387343
     ```
 
-  
+
 For more citation style options, please visit the pipeline's [Zenodo page](https://doi.org/10.5281/zenodo.8387343).
 
 
 ## References
+
 <sup>**1.**  Kurtzer GM, Sochat V, Bauer MW (2017). Singularity: Scientific containers for mobility of compute. PLoS ONE 12(5): e0177459.</sup>  
-<sup>**2.**  Koster, J. and S. Rahmann (2018). Snakemake-a scalable bioinformatics workflow engine. Bioinformatics 34(20): 3600.</sup>  
+<sup>**2.**  Koster, J. and S. Rahmann (2018). "Snakemake-a scalable bioinformatics workflow engine." Bioinformatics 34(20): 3600.</sup>  

@@ -169,11 +169,3 @@ site/
 test.sh
 test_*/
 tmp_*/
-
-#Rhistory
-.Rhistory
-**/.Rhistory
-
-## DMR contrasts file
-contrasts.txt
-

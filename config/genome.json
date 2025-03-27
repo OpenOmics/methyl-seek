@@ -1,0 +1,75 @@
+{
+    "references": {
+        "shared": {
+            "PHAGE_FASTA": "/data/NHLBI_IDSS/references/Bismark_Genomes/phage/genome.fa",
+            "PHAGE_REF": "/data/NHLBI_IDSS/references/Bismark_Genomes/phage",
+            "BISULPHITE_GENOMES": "/data/NHLBI_IDSS/references/Bismark_Genomes"
+        },
+        "hg38": {
+            "SPECIES": "hg38",
+            "SUPPORTED_MODES": ["run", "dmr", "dcv"],
+            "CHRS": [
+                "chr1", "chr2", "chr3", "chr4", "chr5", "chr6", 
+                "chr7", "chr8", "chr9", "chr10", "chr11", "chr12",
+                "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", 
+                "chr19", "chr20", "chr21", "chr22", "chr23", "chrX"
+            ],
+            "GENOME_FASTA": "/fdb/igenomes/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/genome.fa",
+            "BISULPHITE_REF": "/data/NHLBI_IDSS/references/Bismark_Genomes/hg38",
+            "BISULPHITE_FA": "/data/NHLBI_IDSS/references/Bismark_Genomes/hg38/genome.fa",
+            "GTF_FILE": "/fdb/igenomes/Homo_sapiens/UCSC/hg38/Annotation/Genes/genes.gtf",
+            "rRNA_INTERVALS": "/data/NHLBI_IDSS/references/Bismark_Genomes/hg38/RNA-Seek_build/hg38.rRNA_interval_list",
+            "REF_FLAT": "/data/NHLBI_IDSS/references/Bismark_Genomes/hg38/RNA-Seek_build/refFlat.txt",
+            "REF_BED": "/data/NHLBI_IDSS/references/Bismark_Genomes/hg38/RNA-Seek_build/genes.ref.bed",
+            "UCSC_LIFTOVER": "/data/NHLBI_IDSS/references/cfDNAme/hg38ToHg19.over.chain.gz",
+            "UXM_ATLAS_BED": "/data/OpenOmics/references/methyl-seek/UXM_deconv/supplemental/Atlas.U250.l4.hg38.full.bed",
+            "UXM_ATLAS_REF": "/data/OpenOmics/references/methyl-seek/UXM_deconv/supplemental/Atlas.U250.l4.hg38.full.tsv",
+            "METHATLAS_REF": "/data/NHLBI_IDSS/references/MethylCpG_deconvolution/resources/reference_atlas.csv",
+            "METHATLAS_CpG_TABLE": "/data/NHLBI_IDSS/references/MethylCpG_deconvolution/resources/reference_atlas.hg38.unique.bed",
+            "cfDNAme_REF_MARKERS": "/data/NHLBI_IDSS/references/cfDNAme/Atlas.MethylMatrix.markers_22cov.tsv",
+            "cfDNAme_REF_IDS": "/data/NHLBI_IDSS/references/cfDNAme/reference_methylomes.20230831.tsv",
+            "cfDNAme_GOLD_MARKERS": "/data/NHLBI_IDSS/references/cfDNAme/golden_markers.22.bed"
+        },
+        "hg19": {
+            "SPECIES": "hg19",
+            "SUPPORTED_MODES": ["run", "dmr"],
+            "CHRS": [
+                "chr1", "chr2", "chr3", "chr4", "chr5", "chr6", 
+                "chr7", "chr8", "chr9", "chr10", "chr11", "chr12",
+                "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", 
+                "chr19", "chr20", "chr21", "chr22", "chr23", "chrX"
+            ],
+            "GENOME_FASTA": "/fdb/igenomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa",
+            "BISULPHITE_REF": "/data/NHLBI_IDSS/references/Bismark_Genomes/hg19",
+            "BISULPHITE_FA": "/data/NHLBI_IDSS/references/Bismark_Genomes/hg19/genome.fa",
+            "UXM_ATLAS_BED": "/data/OpenOmics/references/methyl-seek/UXM_deconv/supplemental/Atlas.U250.l4.hg19.full.bed",
+            "UXM_ATLAS_REF": "/data/OpenOmics/references/methyl-seek/UXM_deconv/supplemental/Atlas.U250.l4.hg19.full.tsv"
+        },
+        "mm10": {
+            "SPECIES": "mm10",
+            "SUPPORTED_MODES": ["run", "dmr"],
+            "CHRS": [
+                "chr1", "chr2", "chr3", "chr4", "chr5", "chr6", 
+                "chr7", "chr8", "chr9", "chr10", "chr11", "chr12",
+                "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", 
+                "chr19", "chrX"
+            ],
+            "GENOME_FASTA": "/fdb/igenomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fa",
+            "BISULPHITE_REF": "/data/NHLBI_IDSS/references/Bismark_Genomes/mm10",
+            "BISULPHITE_FA": "/data/NHLBI_IDSS/references/Bismark_Genomes/mm10/genome.fa"
+        },
+        "rn6": {
+            "SPECIES": "rn6",
+            "SUPPORTED_MODES": ["run", "dmr"],
+            "CHRS": [
+                "chr1", "chr2", "chr3", "chr4", "chr5", "chr6", 
+                "chr7", "chr8", "chr9", "chr10", "chr11", "chr12",
+                "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", 
+                "chr19", "chr20", "chrX"
+            ],
+            "GENOME_FASTA": "/fdb/igenomes/Rattus_norvegicus/UCSC/rn6/Sequence/WholeGenomeFasta/genome.fa",
+            "BISULPHITE_REF": "/data/NHLBI_IDSS/references/Bismark_Genomes/rn6",
+            "BISULPHITE_FA": "/data/NHLBI_IDSS/references/Bismark_Genomes/rn6/genome.fa"
+        }
+    }
+}

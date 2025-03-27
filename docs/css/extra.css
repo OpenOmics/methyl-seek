@@ -10,3 +10,15 @@
 .heart {
   animation: heart 1500ms infinite;
 }
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        #1A1B23DE;
+  --md-typeset-a-color:         #b1b9ed;
+}
+
+.md-typeset .admonition.custom-grid-button,
+.md-typeset details.custom-grid-button {
+  border-color: var(--md-code-bg-color);
+  border-width: 2px;
+  width: 45%;
+}
