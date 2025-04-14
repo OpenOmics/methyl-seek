@@ -51,6 +51,17 @@ HG38TOHG19             = config["references"][GENOME].get("UCSC_LIFTOVER", "")  
 atlas_bed              = config["references"][GENOME].get("UXM_ATLAS_BED", "")        # UXM references
 atlas_tsv              = config["references"][GENOME].get("UXM_ATLAS_REF", "")        # UXM references
 
+# Differential CpG and DMR options
+grp_file = config['options'].get('groups','')  # Groups file
+# Dictionary mapping each group (key) 
+# to a list of samples (value)
+group2samples = config['project']['groups']    # i.e. {"G1": ["S1", "S2"], "G2": ["S3", "S4"], ...}
+# Nested list containing each 
+# comparsion of interest   
+contrasts     = config['project']['contrast'] # i.e. [["G2", "G2"], ...]
+case_groups  = [g1 for g1,g2 in contrasts]    # i.e. baseline group in comparison
+ctrl_groups  = [g2 for g1,g2 in contrasts]
+
 
 # Read in resource information,
 # containing information about 

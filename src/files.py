@@ -42,7 +42,7 @@ def check_file(file, ncols, delim='\t'):
     c = Colors()
     fh = open(file, 'r')
     try:
-        header = [clean(col.lower().strip()) for col in next(fh).strip().split(delim)]
+        header = [clean(col.strip()) for col in next(fh).strip().split(delim)]
     except StopIteration:
         err('{}{}Error: --groups "{}" file is empty!{}'.format(c.bg_red, c.white, file, c.end))
         fatal('{}{}Please add Sample and Group information to the file and try again.{}'.format(c.bg_red, c.white, c.end))
