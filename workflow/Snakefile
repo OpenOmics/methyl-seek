@@ -130,6 +130,7 @@ rule all:
         join(working_dir, "bismark_summary_report.txt"),
         join(working_dir, "bismark_summary_report.html"),
         join(working_dir, "multiqc_report.html"),
+        join(working_dir, "multiqc_data", "multiqc_summary_table.csv"),
         # Conditionally run rules for DMR and DCV modes
         output_from_optional_modes(dmr_mode=run_dmr_mode, dcv_mode=run_dcv_mode),
 

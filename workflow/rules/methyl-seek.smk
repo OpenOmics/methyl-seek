@@ -458,6 +458,10 @@ rule multiqc:
     output:
         join(working_dir, "bismark_summary_report.txt"),
         join(working_dir, "bismark_summary_report.html"),
+        join(working_dir, "multiqc_data", "multiqc_fastqc.txt"),
+        join(working_dir, "multiqc_data", "multiqc_bismark_alignment.txt"),
+        join(working_dir, "multiqc_data", "multiqc_bismark_dedup.txt"),
+        join(working_dir, "multiqc_data", "multiqc_bismark_methextract.txt"),
         join(working_dir, "multiqc_report.html"),
     params:
         rname      = "multiqc",
@@ -481,4 +485,44 @@ rule multiqc:
         mv bismark_summary_report.txt {params.outdir}/
         cd {params.outdir}
         multiqc --ignore '*/.singularity/*' -f --interactive .
+        """
+
+
+rule multiqc_summary:
+    """
+    Rule to summarise the multiQC stats per sample into a CSV table. This
+    rule takes in the parsed text files that MultiQC produces as it runs
+    as input.
+    @Input:
+        FastQC MultiQC text file,
+        Bismark MultiQC text files
+    @Output:
+        Summary QC table in CSV format
+    """
+    input:
+        fas  = join(working_dir, "multiqc_data", "multiqc_fastqc.txt"),
+        aln  = join(working_dir, "multiqc_data", "multiqc_bismark_alignment.txt"),
+        dup  = join(working_dir, "multiqc_data", "multiqc_bismark_dedup.txt"),
+        meth = join(working_dir, "multiqc_data", "multiqc_bismark_methextract.txt"),
+    output:
+        csv  = join(working_dir, "multiqc_data", "multiqc_summary_table.csv"),
+    params:
+        rname   = "mqc_summary",
+        rscript = join(working_dir, "workflow", "scripts", "get_multiqc_summary.R"),
+    resources:
+        mem       = allocated("mem",       "multiqc_summary", cluster),
+        gres      = allocated("gres",      "multiqc_summary", cluster),
+        time      = allocated("time",      "multiqc_summary", cluster),
+        partition = allocated("partition", "multiqc_summary", cluster),
+    threads:
+        int(allocated("threads", "multiqc_summary", cluster)),
+    shell:
+        """
+        module load R
+        Rscript {params.rscript} \\
+            {input.aln} \\
+            {input.dup} \\
+            {input.meth} \\
+            {input.fas} \\
+            {output.csv}
         """
