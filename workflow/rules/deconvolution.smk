@@ -189,7 +189,7 @@ rule liftover_bedgraph:
         int(allocated("threads", "liftover_bedgraph", cluster)),
     shell:
         """
-        module load bedtools crossmap
+        module load bedtools crossmap/0.6.5
         crossmap bed {params.lift_file} {input.bed} {output.graph}
         """
 
