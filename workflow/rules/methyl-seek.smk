@@ -484,6 +484,7 @@ rule multiqc:
         mv bismark_summary_report.html {params.outdir}/
         mv bismark_summary_report.txt {params.outdir}/
         cd {params.outdir}
+        export PYTHONNOUSERSITE=1
         multiqc --ignore '*/.singularity/*' -f --interactive .
         """
 
