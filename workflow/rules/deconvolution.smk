@@ -150,7 +150,7 @@ rule run_deconv_merged:
 # cfDNAme rules 
 rule sorting_CpG_bedgraph:
     input:
-        bed = join(working_dir, "CpG", "{samples}", "{samples}.bismark_bt2_pe.deduplicated.bedGraph.gz"),
+        bed = join(working_dir, "CpG", "{samples}", "{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"),
     output:
         bed = temp(join(working_dir, "CpG", "{samples}", "{samples}.mapped_autosomal_CpG.bedGraph.tmp")),
     params:
@@ -167,6 +167,7 @@ rule sorting_CpG_bedgraph:
         module load bedtools
         zcat {input.bed} \\
             | tail -n +2 \\
+            | awk '{if ($5 + $4 > 0) print $1"\t"$2-1"\t"$2"\t"($4/($4+$5))*100}' \\
             | bedtools sort -i - \\
         > {output.bed}
         """
@@ -281,6 +282,8 @@ rule cfDNAme:
             colon_5/hsc_5/hsc_2/spleen_1/spleen_2/spleen_3/spleen_4
         """
 
+
+## UXM rules
 
 rule bamsort:
     input:
