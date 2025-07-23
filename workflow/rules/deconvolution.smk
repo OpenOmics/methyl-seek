@@ -147,7 +147,7 @@ rule run_deconv_merged:
         """
 
 
-# cfDNAme rules 
+# cfDNAme rules
 rule sorting_CpG_bedgraph:
     input:
         bed = join(working_dir, "CpG", "{samples}", "{samples}.bismark_bt2_pe.deduplicated.CpG_report.txt.gz"),
@@ -167,7 +167,7 @@ rule sorting_CpG_bedgraph:
         module load bedtools
         zcat {input.bed} \\
             | tail -n +2 \\
-            | awk '{if ($5 + $4 > 0) print $1"\t"$2-1"\t"$2"\t"($4/($4+$5))*100}' \\
+            | awk '{{if ($5 + $4 > 0) print $1"\t"$2-1"\t"$2"\t"($4/($4+$5))*100}}' \\
             | bedtools sort -i - \\
         > {output.bed}
         """
