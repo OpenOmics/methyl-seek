@@ -20,7 +20,7 @@ meth = read.delim(meth_file)
 meth$Library_ID = str_split_fixed(meth$Sample, '[.]', 2)[,1]
 meth1 = meth[,c("Library_ID","meth_cpg")]
 
-fas = read.delim(meth_file)
+fas = read.delim(fas_file)
 fas$Library_ID = str_split_fixed(fas$Sample, '[.]', 2)[,1]
 
 fas1 = aggregate(fas$Total.Sequences, list(fas$Library_ID), FUN=mean)
